@@ -4,6 +4,69 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-09 (evening run) — M1 / T1.2 Sonnet deep tier + router (PR)
+
+**Slice built:** M1 / T1.2 — `SonnetExtractor` (conditional deep tier) + the
+`RoutingExtractor` (Flash → low-confidence → Sonnet → human). One slice only. On
+entry, `main` already had T1.1 merged (PR #1) and no open BLOCKER/MAJOR/FAIL, so I
+picked the next TODO. (Note: the connected-folder `planning/*` copies were a run
+behind `main`; the repo is the source of truth per AGENTS.md §0 — I built off `main`.)
+
+**What was built**
+- `src/lib/extractor/sonnet.ts` — `SonnetExtractor implements LabelExtractor`. Single
+  Anthropic Messages vision call: `temperature:0`, JSON-only prompt (`SONNET_PROMPT =
+  EXTRACTION_PROMPT + JSON-shape instruction`, reusing the Flash transcription prompt),
+  base64 image block. Key sent in the `x-api-key` header + `anthropic-version` (never
+  in the URL). Pure helpers `buildSonnetRequestBody` / `extractAnthropicText` are
+  network-free and unit-tested; constructor takes an injectable `fetchImpl` so tests
+  MOCK the transport. Reuses the Flash tier's tolerant `parseExtractedLabel`, so
+  malformed/empty/blocked output degrades to a confidence-0 label (no crash). 7s
+  `AbortController` timeout (deep tier may run ~5-7s per CONTEXT §4).
+- `src/lib/extractor/router.ts` — `RoutingExtractor implements LabelExtractor`.
+  `extractRouted(image)` runs the primary (Flash); if `confidence >= threshold` it
+  returns the Flash result and NEVER calls the deep tier (protects the 5s SLA); below
+  threshold it invokes Sonnet and flags `escalated:true`. Returns routing metadata
+  (`label, escalated, tier, extractorName, primaryConfidence, threshold,
+  deepTierError?`) for T1.3 to map onto `VerificationResult.escalated`. Threshold from
+  `getConfidenceThreshold()` (env, 0.7 default), constructor-overridable.
+- `src/lib/extractor/index.ts` — exports the new tier + router surface.
+
+**Resilience design**
+- Deep-tier failure (network/timeout/http) does NOT fail the request: the router falls
+  back to the primary's low-confidence label, still `escalated:true`, recording the
+  `ExtractionError['code']` in `deepTierError` (no secrets) — so work reaches human
+  review (the intended terminal state) instead of erroring.
+- Primary-tier failure propagates (nothing to fall back to); the deep tier is not
+  called in that case.
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `vitest run` **54/54**
+(21 new: 13 sonnet + 8 router; transport/extractors injected — no live
+Anthropic/Gemini); `next lint` clean. (No app/route wiring in this slice, so
+`next build` is unchanged.)
+
+**Reviews (subagents, this run):**
+- Code auditor: no BLOCKER/MAJOR. 1 MINOR (the abort timer covers `fetch` but not the
+  `response.json()` body read — a carry-over shared with the Flash tier) + 2 NIT
+  (gif single-frame note; type the `deepTierError` literal). → BACKLOG (M1/T1.3),
+  fixing both tiers together.
+- Compliance: PASS — all seven applicable criteria. UI "closer check" state (M3) and
+  the `/api/verify` `escalated`/`latencyMs` mapping (T1.3) correctly DEFERRED.
+
+**Self-triage:** the one MINOR is a cross-tier latency-deadline carry-over best fixed
+in T1.3 (where the route + both extractors are touched) — logged to BACKLOG rather
+than gold-plated here to keep the slice focused. NITs non-actionable.
+
+**Next task:** M1 / T1.3 — `/api/verify` route (single): multipart input + validation
+→ router (`extractRouted`) → comparison engine → `VerificationResult` with `latencyMs`
++ `escalated`; bad input → 4xx + friendly message, never a stack trace. Also close the
+two T1.3 BACKLOG carry-overs (body-read deadline; MissingConfigError → friendly error).
+
+**Blockers:** none.
+
+**Status: PR pushed — READY FOR STEVE TO REVIEW + MERGE.**
+
+---
+
 ## 2026-06-09 (overnight run) — M1 / T1.1 extraction layer (PR)
 
 **Slice built:** M1 / T1.1 — `LabelExtractor` interface + `GeminiExtractor`. One slice

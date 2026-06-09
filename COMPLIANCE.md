@@ -99,3 +99,57 @@ comparison engine or the API route" (CONTEXT §4). Seam is no longer prose-only.
 ### Open items to close before submission
 - (carried) Re-verify at the §8 submission audit that the README names the in-code
   `LabelExtractor` interface as the firewall seam.
+
+---
+
+## 2026-06-09 (evening run) — M1/T1.2 Sonnet deep tier + router
+
+**Overall: PASS.** All seven applicable criteria PASS; the UI "closer check" state (M3)
+and the `/api/verify` mapping of `escalated`/`latencyMs` (T1.3) are correctly DEFERRED,
+not failed. No compliance FAIL on this slice.
+
+### 1. Same `LabelExtractor` interface for the deep tier (escalation = routing) — **PASS**
+`SonnetExtractor implements LabelExtractor` with the identical `name`/`extract(image):
+Promise<ExtractedLabel>` contract as `GeminiExtractor`. `RoutingExtractor` also
+`implements LabelExtractor` and holds `primary`/`deep` both typed as `LabelExtractor`,
+so escalation is pure routing — a local-OCR tier could drop into either slot (CONTEXT
+§4 firewall seam). Router tests drive both tiers through interface-only fakes.
+
+### 2. Conditional escalation (confident → Flash only; low → deep) — **PASS**
+`if (primaryConfidence >= threshold)` returns the primary result and never references
+`this.deep`; only the `< threshold` branch awaits the deep tier. Verified: conf 0.92 →
+`deep.calls === 0`; conf 0.4 → `deep.calls === 1`. Satisfies CONTEXT §4 / PLAN §8
+("fires only on low confidence, not every label") and the 5s common-path SLA.
+
+### 3. Escalation flagged for the UI + "closer check" supportable — **PASS** (mapping deferred)
+`RoutedExtraction.escalated:boolean` is set on every return path; the route can map it
+directly onto the already-declared `VerificationResult.escalated`. The 7s deep-tier
+timeout makes the ~5-7s escalated window real, so the M3 "running a closer check…"
+state is supportable. The `/api/verify` mapping is T1.3 and the visible UI state is M3
+— DEFERRED, not a gap.
+
+### 4. Threshold configurable (env default 0.7) + sane boundary — **PASS**
+Router takes a `threshold` option, else resolves `getConfidenceThreshold()` lazily (env
+`EXTRACTION_CONFIDENCE_THRESHOLD`, 0.7 default, clamped on NaN/out-of-range). Boundary is
+`>=` (exactly-at-threshold = confident). Covered by the 0.7-no-escalation and
+0.65-escalates(env-default) tests.
+
+### 5. Confidence signal drives the decision (not guessed) — **PASS**
+Decision uses `primaryLabel.confidence` directly; `primaryConfidence` is recorded for
+auditability. Degrade paths emit a real 0-confidence label (rather than throwing), which
+correctly funnels malformed Flash output into escalation.
+
+### 6. Stateless / no-PII + no-adjudicator framing — **PASS**
+`LabelImage` is in-memory base64, never persisted; no DB/session types. Both prompts are
+transcription-only ("Do not make a compliance judgement"); the module header states "no
+verdict logic lives here — the deterministic comparison engine owns every verdict."
+
+### 7. Secrets: env-only, nothing persisted/echoed — **PASS**
+`getAnthropicApiKey()` reads from env via `requireEnv`; key in `x-api-key` header (not
+URL — test-pinned); provider error bodies never surfaced; `deepTierError` carries only a
+code, no secret.
+
+### Correctly DEFERRED (not FAIL)
+- `/api/verify` mapping of `escalated` + measured `latencyMs` → T1.3.
+- Visible "running a closer check…" UI state → M3.
+- `LocalOcrExtractor` (Tesseract) firewall fallback → documented seam only.
