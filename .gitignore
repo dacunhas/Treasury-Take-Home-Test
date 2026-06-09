@@ -1,0 +1,33 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# secrets — the build-agent's GitHub PAT and any other local secrets
+.secrets/
+*.pat
+github-pat.txt
+
+# large / personal reference exports — keep out of the repo
+*.pdf
+
+# leftover sandbox test artifacts (cannot be del
