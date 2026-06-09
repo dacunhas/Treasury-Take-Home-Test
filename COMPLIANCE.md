@@ -60,3 +60,42 @@ the key name only, never the value (tested). `.gitignore` ignores `.env*` with a
 
 ### Open items to close before submission
 - [ ] Declare `LabelExtractor` interface in code (closes §3 PARTIAL) — M1.
+
+---
+
+## 2026-06-09 — M1/T1.1 extractor slice
+
+**Overall: PASS.** The `LabelExtractor` interface is now declared in code as the
+swappable seam; `GeminiExtractor` makes a single low-temperature structured-output
+vision call with the required strict JSON schema; malformed output degrades without
+crashing; the extractor stays transcription-only. **This closes the prior §3 PARTIAL.**
+33/33 mocked unit tests pass (no live inference call).
+
+### 3. Firewall seam / swappable extractor — **PASS** (was PARTIAL)
+`src/lib/extractor/types.ts` declares `interface LabelExtractor { name; extract(image:
+LabelImage): Promise<ExtractedLabel> }`. The header documents it as the seam that lets
+a local/offline OCR impl (Tesseract.js) replace the cloud tiers "without touching the
+comparison engine or the API route" (CONTEXT §4). Seam is no longer prose-only.
+
+### T1.1 acceptance — **PASS**
+- Single `generateContent` call (test asserts `toHaveBeenCalledOnce`), `temperature: 0`,
+  `responseMimeType: application/json`, `responseSchema` with exactly brand/classType/
+  abv/proof/netContents/warningText/rawText/confidence.
+- Malformed/partial/array JSON, empty candidates, and blocked responses all degrade to
+  a confidence-0 `ExtractedLabel` (no crash) — three covered paths.
+- Confidence signal present on every path (drives Flash→Sonnet escalation; threshold
+  0.7 pre-wired). Router itself is correctly **DEFERRED (T1.2)**.
+- Extractor avoids compliance judgement (prompt is transcription-only; verdict stays in
+  the deterministic engine — CONTEXT §4 / §7 no-adjudicator).
+- Stateless / no-PII: image is in-memory base64, nothing persisted; key sent in
+  `x-goog-api-key` header (test confirms it is NOT in the URL); provider error bodies
+  never surfaced (test confirms a leaked-key body does not reach the error message).
+
+### Correctly DEFERRED (not penalized)
+- `SonnetExtractor` + escalation router — T1.2. `/api/verify` + measured `latencyMs` —
+  T1.3. `LocalOcrExtractor` Tesseract impl — documented seam only (CONTEXT §4).
+  Comparison engine / warning diff — M2.
+
+### Open items to close before submission
+- (carried) Re-verify at the §8 submission audit that the README names the in-code
+  `LabelExtractor` interface as the firewall seam.

@@ -41,13 +41,22 @@ Grouped by the PROJECT_PLAN §7 milestones.
 
 ## M1 — Extraction layer (Wed 6/10)
 
-### T1.1 — `LabelExtractor` interface + Gemini impl  [TODO]
+### T1.1 — `LabelExtractor` interface + Gemini impl  [DONE 2026-06-09]
 - Interface `extract(image): Promise<ExtractedLabel>`.
 - `GeminiExtractor`: single structured-output vision call; strict JSON schema
   (brand, classType, abv, proof, netContents, warningText, rawText, confidence);
   low temperature.
 - **Accept:** returns populated `ExtractedLabel` for a sample label in < ~3s;
   malformed model output handled (no crash).
+- Done: `src/lib/extractor/{types,gemini,index}.ts`. `LabelExtractor` interface
+  (`extract(image: LabelImage): Promise<ExtractedLabel>`) is the swappable firewall
+  seam. `GeminiExtractor`: single `generateContent` vision call, `temperature: 0`,
+  `responseMimeType: application/json` + strict `responseSchema` (brand, classType,
+  abv, proof, netContents, warningText, rawText, confidence). Malformed/empty/blocked
+  output degrades to a confidence-0 label (no crash); transport failures throw a
+  secret-free `ExtractionError` (codes: network/http/empty/input/timeout). 4s
+  AbortController timeout guards the 5s SLA. 19 mocked unit tests (transport injected
+  — no live Gemini). Closes the compliance §3 firewall-seam PARTIAL → PASS.
 
 ### T1.2 — Sonnet deep tier + router  [TODO]
 - `SonnetExtractor` (same interface). Router: Flash → if confidence < threshold →

@@ -53,3 +53,41 @@ production build all pass.
 ### Resolution status
 No fixes required within M0 (all items are MINOR/NIT and most target later
 milestones). Carried to BUILD_BACKLOG "Carry-over from review."
+
+---
+
+## 2026-06-09 — M1/T1.1 extractor slice
+
+**Verdict: No BLOCKER/MAJOR findings.** Module boundaries clean; the extractor only
+transcribes (prompt: "Do not make a compliance judgement" — no verdict logic leaks);
+API key is header-only, never in the URL/logs; provider error bodies are never
+surfaced; malformed/empty content degrades (no crash); confidence clamped; transport
+mocked in all tests. Audited `src/lib/extractor/{types,gemini,index}.ts` + tests.
+
+### MINOR — fixed this run
+- **`gemini.ts` `extract()`** — no upper bound on the Flash call threatened the hard
+  5s SLA. **FIXED:** added an `AbortController` with a configurable `timeoutMs`
+  (default 4000) → maps `AbortError` to `ExtractionError('…took too long', 'timeout')`.
+  Covered by a new test.
+- **`gemini.ts` MIME guard** — rejection message advertised only "PNG, JPEG, or WebP"
+  while `SUPPORTED_MIME_TYPES` also allows HEIC/HEIF. **FIXED:** message is now derived
+  from `SUPPORTED_MIME_TYPES`, and the guard uses a dedicated `'input'` error code
+  (distinct from `'http'`) so the future route can branch user-fixable vs retryable.
+
+### NIT — fixed this run
+- Unused `catch (cause)` binding → now used to detect `AbortError`.
+- Network-throw test now also asserts the message is secret-free (parity with the
+  non-2xx test).
+
+### NIT — logged to BACKLOG (not gold-plated this run)
+- Lazy key path: omitting `apiKey` falls through to `getGeminiApiKey()`, which throws
+  `MissingConfigError` (not `ExtractionError`). The friendly-error mapping decision
+  belongs to the `/api/verify` route (T1.3). → BACKLOG.
+
+### Out-of-slice note
+- `next@14.2.5` has a published security advisory (npm flagged it on install).
+  Pre-existing M0 pin; logged to BACKLOG for the M5 deploy bump. Not a T1.1 blocker.
+
+### Resolution status
+All MINOR/NIT items above were fixed and re-tested within the run, except the two
+explicitly logged to BACKLOG. 33/33 tests green; typecheck + lint clean.

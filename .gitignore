@@ -31,3 +31,6 @@ github-pat.txt
 *.pdf
 
 # leftover sandbox test artifacts (cannot be del
+# next.js / typescript generated artifacts
+next-env.d.ts
+*.tsbuildinfo

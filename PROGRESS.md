@@ -4,6 +4,57 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-09 (overnight run) — M1 / T1.1 extraction layer (PR)
+
+**Slice built:** M1 / T1.1 — `LabelExtractor` interface + `GeminiExtractor`. One slice
+only (no run-ahead). No open BLOCKER/MAJOR/FAIL on entry, so picked the next TODO.
+
+**What was built**
+- `src/lib/extractor/types.ts` — `LabelExtractor` interface (`extract(image:
+  LabelImage): Promise<ExtractedLabel>`), in-memory `LabelImage` (base64 + mimeType,
+  never persisted), and `ExtractionError` (codes: network/http/empty/input/timeout/
+  unknown). This interface IS the swappable firewall seam (CONTEXT §4).
+- `src/lib/extractor/gemini.ts` — `GeminiExtractor implements LabelExtractor`. Single
+  Gemini `generateContent` vision call: `temperature: 0`, `responseMimeType:
+  application/json`, strict `responseSchema` (brand, classType, abv, proof,
+  netContents, warningText, rawText, confidence). Transcription-only prompt ("do not
+  make a compliance judgement"). Exported pure helpers `buildGeminiRequestBody` /
+  `extractModelText` / `parseExtractedLabel` are network-free and unit-tested.
+  Constructor takes an injectable `fetchImpl` so tests MOCK the transport.
+- `src/lib/extractor/index.ts` — public surface.
+
+**Error / robustness design**
+- Malformed, partial, array, empty-candidate, or safety-blocked output → degrades to a
+  confidence-0 `ExtractedLabel` (no crash) so the T1.2 router can escalate / hand to
+  human review. Transport failures throw a secret-free `ExtractionError`.
+- 4s `AbortController` timeout guards the hard 5s SLA (added in self-triage).
+- API key sent in the `x-goog-api-key` header (never in the URL); provider error
+  bodies are never surfaced into messages (both pinned by tests).
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `vitest run` **33/33**
+(19 new extractor tests, transport mocked — no live Gemini/Anthropic call); `next lint`
+clean. (No app/route wiring in this slice, so `next build` is unchanged from M0.)
+
+**Reviews (subagents, this run):**
+- Code auditor: no BLOCKER/MAJOR. Two MINOR (no timeout; misleading MIME message) +
+  two NIT (unused `cause`; asymmetric secret-free test) — all FIXED + re-tested this
+  run. One NIT (lazy-key `MissingConfigError` vs `ExtractionError` mapping) → BACKLOG
+  for T1.3. Also flagged `next@14.2.5` security advisory → BACKLOG for M5.
+- Compliance: PASS. **Closes the §3 firewall-seam PARTIAL → PASS.** T1.2/T1.3/M2
+  items correctly DEFERRED, not failed.
+
+**Self-triage:** safely-fixable audit items fixed + re-tested in-run; items needing a
+future-route decision or a dependency bump logged to BACKLOG (not gold-plated).
+
+**Next task:** M1 / T1.2 — `SonnetExtractor` (same interface) + the Flash→(low
+confidence)→Sonnet router, escalation flagged in the result for the UI.
+
+**Blockers:** none.
+
+**Status: PR pushed — READY FOR STEVE TO REVIEW + MERGE.**
+
+---
+
 ## 2026-06-09 (evening run) — M0 scaffold & foundations
 
 **Slice built:** M0 (T0.1 + T0.2 + T0.3) — the first-run scaffold per the task brief.
