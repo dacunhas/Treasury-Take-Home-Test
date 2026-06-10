@@ -4,6 +4,82 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-10 (overnight run) — M2 / T2.1 normalization + brand/class-type match (PR)
+
+**Slice built:** M2 / T2.1 — the comparison engine's tolerant text core (normalization
++ similarity + brand/class-type field comparison). One slice only.
+
+**Slice-selection note (ordering):** on entry `main` already had M0, T1.1 (PR #1) and
+T1.2 (PR #2) merged, with NO open BLOCKER/MAJOR/FAIL. The next strict-order TODO is
+**T1.3 (`/api/verify`)**, but its acceptance is "call extractor → **comparison engine**
+→ return `VerificationResult`," and the comparison engine did not exist yet — T1.3 is
+**blocked by a dependency**. The backlog rule is "do them top-down *unless a dependency
+says otherwise*," and the guardrail favors a fully-tested slice over an unmet
+acceptance criterion. So I built **T2.1** (the comparison-engine foundation that
+unblocks T1.3) as this run's single slice. This is a dependency-driven pick, not a
+guess against the spec.
+
+**Connected-folder drift (FYI for Steve):** the `planning/*` + `PROGRESS/AUDIT/
+COMPLIANCE` copies in the connected folder are ~2 PRs behind `main` (they still show
+T1.1/T1.2 as TODO). The repo `main` is the source of truth per AGENTS.md §0; I built
+off `main`. A `git pull` after merging reconciles your local folder.
+
+**What was built**
+- `src/lib/comparison/normalize.ts` — pure helpers: `normalizeText` (NFKD +
+  combining-mark strip for diacritic folding, lowercase, strip apostrophes/possessive
+  markers, other punctuation→space, collapse+trim whitespace), `levenshtein`
+  (two-row DP, O(min(m,n)) memory, safe under `noUncheckedIndexedAccess`),
+  `similarityRatio` (`1 − dist/maxLen`, both-empty→1).
+- `src/lib/comparison/textMatch.ts` — `compareTextField(field, expected, found)` →
+  `FieldResult`. Exact raw (incl. whitespace) → `match`; equal only after
+  normalization (case/punctuation/possessive/accent/whitespace) → `review` "matches
+  except formatting" (never a silent pass — Dave/STONE'S THROW human-in-the-loop);
+  else similarity thresholds `>=0.95` match / `0.80–0.95` review / `<0.80` mismatch;
+  empty/null found → `missing`. `compareBrand` / `compareClassType` wrappers.
+- `src/lib/comparison/index.ts` — public surface.
+
+**Design notes**
+- Verdict depends ONLY on extracted text run through pure functions — no model
+  opinion, no I/O, no Date/random/global state (the "correctness is defensible" core
+  from CONTEXT §4 / PLAN architecture).
+- For typical brand lengths (~15–18 chars) a single-character typo lands at
+  ~0.94 similarity → **review**, not match. That is intended: borderline reads are
+  flagged for a human glance rather than silently passed.
+
+**Verification (sandbox):**
+- `vitest run` — **83/83 passing** (29 new comparison tests + 54 pre-existing). All
+  extractor tests remain MOCKED (no live Gemini/Anthropic); the comparison tests call
+  no model at all (pure text).
+- Slice typecheck (`tsc --noEmit`, strict + `noUncheckedIndexedAccess`) — clean.
+- Build-env constraint this run: the sandbox root had only ~400 MB free (leftover
+  `node_modules` from prior sessions, owned by `nobody`, could not be removed), so a
+  full `npm install` would not fit. Validated the slice with a minimal vitest +
+  typescript toolchain instead (the slice is pure TS with no Next runtime deps).
+  Full `next lint` / `next build` were not re-run this slice — noted for Steve / the
+  next run with a clean sandbox. No production code depends on this.
+
+**Reviews (subagents, this run):**
+- Code auditor → **No BLOCKER/MAJOR.** 2 MINOR + NITs. Both MINORs FIXED + re-tested
+  in-run: (1) diacritic stripping corrupted accented brands (`café`→`caf`) → now NFKD
+  + combining-mark fold (`café`==`cafe`); (2) leading/trailing-whitespace-only diff
+  returned "Exact match" → now routes to formatting `review`. See AUDIT.md.
+- Compliance → **PASS.** STONE'S THROW → review (test-proven); Match/Review/Mismatch
+  three-way + never-silent-pass honored; pure/deterministic. T2.2–T2.5 correctly
+  DEFERRED. See COMPLIANCE.md.
+
+**Self-triage:** the two MINORs were safely fixable → fixed + re-tested. Optional
+NITs (exact-threshold-boundary pin test; `compareClassType` missing-case test) logged
+to BUILD_BACKLOG, not gold-plated.
+
+**Next task:** M2 / T2.2 — ABV (conditional by beverage type). After M2 lands, T1.3
+(`/api/verify`) is unblocked.
+
+**Blockers:** none.
+
+**Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-09 (evening run) — M1 / T1.2 Sonnet deep tier + router (PR)
 
 **Slice built:** M1 / T1.2 — `SonnetExtractor` (conditional deep tier) + the

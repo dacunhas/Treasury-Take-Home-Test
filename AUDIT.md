@@ -137,3 +137,48 @@ clean. Transport fully mocked (injected `fetchImpl`/fake extractors — no live 
 ### Resolution status
 No fixes required within T1.2 (the one MINOR is a cross-tier carry-over best fixed in
 T1.3; NITs are non-actionable). Carried to BUILD_BACKLOG "Carry-over from review."
+
+---
+
+## 2026-06-10 — M2/T2.1 comparison engine (normalize + brand/class-type)
+
+**Verdict: No BLOCKER/MAJOR. Slice is pure, deterministic, ship-ready. 2 MINOR (both
+fixed in-run) + NITs.**
+
+Audited `src/lib/comparison/{normalize,textMatch,index}.ts` + tests against
+PROJECT_PLAN §3 ("Brand name & class/type") and CONTEXT §6. Pure/I-O-free/no hidden
+state (no Date/random/globals); Levenshtein two-row DP correct & safe under
+`noUncheckedIndexedAccess`; thresholds use the right boundary operators (`>=0.95`
+match / `>=0.80` review / else mismatch); `FieldResult` shape matches
+`src/types/index.ts`; details plain-language & secret-free; O(n·m) on short fields —
+no 5s-budget perf trap. 83/83 tests green; slice typecheck clean.
+
+### MINOR — fixed this run
+- **`normalize.ts` (punctuation pass)** — diacritic letters were dropped to a *space*
+  (`café`→`"caf"`, `Schön`→`"sch n"`), corrupting real TTB brands (Crème/Forêt/
+  Köstritzer) and splitting tokens. **FIXED:** added `NFKD` + combining-mark strip
+  (`/[̀-ͯ]/`) before the punctuation pass, so accents fold to base letters
+  (`café`==`cafe`). New tests pin `Café/Schön/Crème` and `Crème de Cassis` vs
+  `Creme de Cassis` → review.
+- **`textMatch.ts` exact-match branch** — compared *trimmed* strings, so a
+  leading/trailing-whitespace-only delta returned `match` "Exact match." — a silent
+  pass on a non-identical raw string, contrary to §3 "never silent pass on
+  formatting." **FIXED:** the exact branch now gates on raw `expected === found`; any
+  whitespace-only delta falls through to the normalization-equal `review` branch. New
+  test pins trailing-space → review.
+
+### NIT — logged to BACKLOG (not gold-plated)
+- No test constructs an input landing exactly on `ratio === 0.80` / `=== 0.95` to lock
+  the `>=` (vs `>`) boundary semantics; bands are covered mid-range. → BACKLOG.
+- `compareClassType` has no direct `missing`/null test (shared `compareTextField`
+  makes it low-risk; `compareBrand` covers the path). → BACKLOG.
+
+### Out-of-slice note
+- Full `next lint` / `next build` not re-run this slice due to the ~400 MB sandbox
+  disk constraint (leftover `nobody`-owned `node_modules` unremovable); validated with
+  a minimal vitest+typescript toolchain. Re-run on the next clean sandbox. Pure-TS
+  slice, no Next runtime deps.
+
+### Resolution status
+Both MINORs fixed + re-tested within the run; NITs carried to BUILD_BACKLOG.
+83/83 green; slice typecheck clean.

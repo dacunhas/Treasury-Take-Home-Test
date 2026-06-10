@@ -153,3 +153,48 @@ code, no secret.
 - `/api/verify` mapping of `escalated` + measured `latencyMs` → T1.3.
 - Visible "running a closer check…" UI state → M3.
 - `LocalOcrExtractor` (Tesseract) firewall fallback → documented seam only.
+
+---
+
+## 2026-06-10 — M2/T2.1 comparison engine (brand/class-type tolerant matching)
+
+**Overall: PASS.** T2.1 faithfully implements the brand/class-type requirements
+(CONTEXT §3/§6, PROJECT_PLAN §3/§8). The Dave/STONE'S THROW human-in-the-loop
+semantics are realized and test-proven; the verdict is pure and deterministic; the
+Match/Review/Mismatch three-way distinction honors "never silent pass on formatting."
+ABV (T2.2), net contents (T2.3), Government Warning diff (T2.4) and aggregate verdict
+(T2.5) are correctly DEFERRED (not FAIL).
+
+### 1. Tolerant normalization (case/punctuation/possessive/whitespace) — **PASS**
+`normalizeText` applies NFKD + diacritic fold → lowercase → strip apostrophes/
+possessive markers → punctuation→space → collapse/trim. Matches PLAN §3. Tests cover
+possessive (incl. curly apostrophe), punctuation/hyphen, whitespace, full-width NFKC,
+diacritics, idempotency.
+
+### 2. STONE'S THROW → Match/Review, not Fail (test-proven) — **PASS**
+Normalization-equal strings return `review` "matches except formatting." Proven by
+`compareBrand("STONE'S THROW","Stone's Throw") → review`. Satisfies PLAN §8
+("STONE'S THROW resolve to Match/Review, not false Fail") and CONTEXT §3.
+
+### 3. Match/Review/Mismatch three-way + never-silent-pass — **PASS**
+All four `FieldStatus` values produced; formatting-only (case/punctuation/possessive/
+accent/whitespace) routes to **review**, not match; thresholds 0.95/0.80 per §3.
+Plain-language details ("please confirm"/"please check"). Human-in-the-loop framing
+intact (the tool flags; a human decides).
+
+### 4. Deterministic / pure — no model opinion in the verdict — **PASS**
+`normalize.ts`/`textMatch.ts` are I/O-free, no randomness/LLM — verdict derives solely
+from extracted text via pure functions. Consistent with the "defensible correctness"
+posture (CONTEXT §4).
+
+### 5. Clearly-different → mismatch — **PASS**
+Below 0.80 → mismatch; proven (OLD TOM DISTILLERY vs JACK DANIELS; reworded
+class/type). Class/type parity via `compareClassType`.
+
+### Correctly DEFERRED (not FAIL)
+- ABV conditional-by-beverage-type (T2.2), net contents (T2.3), Government Warning
+  strict+diff (T2.4), aggregate verdict (T2.5), `/api/verify` wiring (T1.3),
+  single/batch UI (M3/M4).
+
+### Open items to close before submission
+- [ ] Optional: pin exact 0.80/0.95 similarity boundary in a regression test (NIT).
