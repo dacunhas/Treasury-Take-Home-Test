@@ -223,3 +223,54 @@ class/type). Class/type parity via `compareClassType`.
 
 ### Open items to close before submission
 - [ ] Optional: pin exact 0.80/0.95 similarity boundary in a regression test (NIT).
+
+---
+
+## 2026-06-10 — M2/T2.3 net-contents comparison
+
+**Overall: PASS.** T2.3 implements the net-contents requirement (CONTEXT §5/§6,
+PROJECT_PLAN §3/§8, BACKLOG T2.3 acceptance) faithfully: value+unit parsing, mL/L/fl-oz
+normalization, numeric compare, and the Match/Review/Mismatch human-in-the-loop
+distinction. Pure/deterministic/no-PII. ABV (T2.2 DONE), Government Warning diff (T2.4)
+and aggregate verdict (T2.5) remain correctly DEFERRED, not FAIL.
+
+### 1. Value + unit parsing — **PASS**
+`parseNetContents` extracts value+unit, tolerant of "750 mL", "750ml", "1 L", "0,75 L"
+(comma decimal), "12 fl. oz." (periods/spaces folded), and of surrounding text / lot
+codes ("Lot 12345 / 750 mL" -> 750 mL, after the M1 audit fix). Bare number -> unit-less
+parse, no crash.
+
+### 2. mL/L/fl-oz normalization + numeric compare (BACKLOG T2.3 acceptance) — **PASS**
+`UNITS` normalizes to canonical mL (mL/cL/L metric; fl oz/pt/qt/gal U.S., 1 US fl oz =
+29.5735 mL); compare within a 1% relative tolerance. Conversions (1 L = 1000 mL, 0.75 L
+= 750 mL, 75 cL = 750 mL) -> match; genuine fill differences (750 vs 700, 375 vs 750)
+-> mismatch. "Unit conversions and mismatches" criterion met directly.
+
+### 3. Match/Review/Mismatch — never a silent pass — **PASS**
+Equal quantity in a different measurement system (750 mL vs 25.4 fl oz; 12 fl oz vs 355
+mL) -> `review` with a "different measurement system… confirm" detail — surfaced, not
+swallowed. Same-system equal-but-different-unit (1 L vs 1000 mL) -> clean match.
+Unit-less label number -> review; unreadable/empty -> missing.
+
+### 4. Metric-required (spirits/wine) vs fl-oz-allowed (beer) nuance (CONTEXT §5) — **PASS (as scoped)**
+The module does not hard-fail a cross-system equal quantity; it routes to `review` so a
+human judges acceptability for the beverage type — never wrongly failing a compliant
+label. Binding `beverageType` so a beer fl-oz quantity becomes an outright `match` is
+correctly DEFERRED to the aggregate verdict (T2.5), consistent with how T2.2 consumes
+`beverageType`.
+
+### 5. Sample label "750 mL" — **PASS**
+`parseNetContents('750 mL')` -> {value:750, unit:'mL', system:'metric', ml:750};
+`compareNetContents('750 mL','750 mL')` and `'750 mL' vs '750ml'` -> match (test-pinned).
+
+### 6. Stateless / pure / no-PII — **PASS**
+No I/O, no model calls, no globals, no persistence; deterministic. Error details are
+plain-language and test-asserted free of stack traces.
+
+### Correctly DEFERRED (not FAIL)
+- Beverage-type-aware net-contents verdict (metric mandatory for spirits/wine) — T2.5.
+- Government Warning strict + diff (T2.4); aggregate verdict (T2.5); `/api/verify`
+  wiring (T1.3); single/batch UI (M3/M4).
+
+### Open items to close before submission
+- [ ] Thread `beverageType` into the net-contents verdict at T2.5 (BACKLOG carry-over).

@@ -208,3 +208,50 @@ no 5s-budget perf trap. 83/83 tests green; slice typecheck clean.
 ### Resolution status
 Both MINORs fixed + re-tested within the run; NITs carried to BUILD_BACKLOG.
 83/83 green; slice typecheck clean.
+
+---
+
+## 2026-06-10 — M2/T2.3 net-contents comparison
+
+**Verdict: No BLOCKER. 2 MAJOR found; M1 FIXED in-run, M2 logged for T2.5. 1 MINOR +
+NITs. Slice is pure, deterministic, and ship-ready after the M1 fix.**
+
+Audited `src/lib/comparison/{netContents.ts,netContents.test.ts,index.ts}` against
+PROJECT_PLAN §3 ("Net contents") + §8 and CONTEXT §5/§6. Pure/I-O-free (no
+Date/random/globals, no input mutation); two regex matches + arithmetic, O(n) on short
+strings — no 5s-budget perf trap; `FieldResult` shape conforms; details plain-language
+and secret-free. Unit factors verified (1 US fl oz = 29.5735 mL; pint/quart/gallon
+accurate). 142/142 tests green; slice typecheck + eslint clean.
+
+### MAJOR — M1 (FIXED this run)
+- **`netContents.ts` parse** — the original `NET_RE` made the unit OPTIONAL and
+  `String.match` returns the leftmost match, so a leading number (lot code, batch no.,
+  surrounding words) stole the parse and the real unit was dropped ("Lot 12345 / 750
+  mL" -> value 12345, no unit -> `review`/`missing`). A compliant label would be
+  wrongly flagged. **FIXED:** split into `NET_WITH_UNIT_RE` (number anchored to a unit,
+  tried first) + a bare-number fallback used only when no number-with-unit exists. 4
+  new tests pin lot-code/surrounding-text/multi-candidate inputs.
+
+### MAJOR — M2 (open; logged to BACKLOG for T2.5 — NOT a fix-in-run)
+- **`compareNetContents` is not beverage-type-aware** — an equal quantity stated in a
+  different measurement system always returns `review`. Correct (conservative) for
+  spirits/wine, but a beer label legitimately in fl oz against an expected mL value is
+  downgraded to `review` instead of `match`. The fix is to thread `beverageType`
+  through (mirroring `abv.ts`) at the aggregate-verdict stage. Compliance reviewer
+  ruled the conservative `review` a PASS (never wrongly passes a spirits/wine label),
+  so per the file-contract conflict rule (compliance outranks audit) this ships as-is
+  and is carried to T2.5. → BACKLOG.
+
+### MINOR
+- `gal` factor 3785.41 vs true 3785.411784 (~5e-7 relative) — harmless under the 1%
+  tolerance; revisit only if tolerance is tightened. → BACKLOG.
+
+### NIT
+- Bare `oz` maps unconditionally to fluid ounces (correct for a volume net-contents
+  field; a weight "oz" on an alcohol label is implausible). Behavior fine.
+- `?? 0` / `expected ?? ''` fallbacks are dead-defensive (value is non-null on those
+  branches) but keep output secret-free — consistent with `abv.ts` style; leave.
+
+### Resolution status
+M1 fixed + re-tested within the run (142/142 green). M2 + MINOR/NIT carried to
+BUILD_BACKLOG "Carry-over from review."
