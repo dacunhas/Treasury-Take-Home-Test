@@ -87,11 +87,22 @@ Grouped by the PROJECT_PLAN §7 milestones.
 
 ## M2 — Comparison engine (Thu 6/11)  *(the correctness core — heavily tested)*
 
-### T2.1 — Normalization + brand/class-type match  [TODO]
+### T2.1 — Normalization + brand/class-type match  [DONE 2026-06-10]
 - Normalize (lowercase, NFKC, strip punctuation/possessives, collapse whitespace);
   similarity scoring; thresholds → match / review / mismatch.
 - **Accept:** unit tests incl. "STONE'S THROW" vs "Stone's Throw" → review/match,
   not fail; clearly different brands → mismatch.
+- Done: `src/lib/comparison/{normalize,textMatch,index}.ts` — pure/deterministic.
+  `normalizeText` (NFKD + diacritic fold, lowercase, possessive/apostrophe strip,
+  punctuation→space, whitespace collapse), `levenshtein` two-row DP, `similarityRatio`.
+  `compareTextField`/`compareBrand`/`compareClassType` → `FieldResult` with thresholds
+  `>=0.95` match / `0.80–0.95` review / `<0.80` mismatch; normalization-equal (case/
+  punctuation/possessive/accent/whitespace-only) → **review** "matches except
+  formatting" (never silent pass — the STONE'S THROW human-in-the-loop case); empty
+  found → `missing`. 29 mocked-free unit tests (no model calls — pure text). Review
+  MINORs fixed in-run: diacritic folding (café==cafe) + whitespace-only→review.
+  29 new tests; 83/83 total green; slice typechecks clean (strict +
+  `noUncheckedIndexedAccess`).
 
 ### T2.2 — ABV (conditional by beverage type)  [TODO]
 - Parse numeric %; tolerance compare; proof = 2×ABV cross-check. Conditional rules:
@@ -175,6 +186,10 @@ Grouped by the PROJECT_PLAN §7 milestones.
 ---
 
 ## Carry-over from review (from AUDIT.md / COMPLIANCE.md — address in owning milestone)
+- [M2] Pin an exact-boundary regression test landing on `ratio === 0.80` / `=== 0.95`
+  to lock the `>=` threshold semantics (T2.1 AUDIT NIT). Bands covered mid-range.
+- [M2] Add a direct `compareClassType` missing/null test for parity with
+  `compareBrand` (T2.1 AUDIT NIT; shared `compareTextField` makes it low-risk).
 - [M1/T1.3] Extend the abort deadline to cover the response-body read
   (`response.json()`), not just `fetch`, in BOTH `gemini.ts` and `sonnet.ts` — clear
   the timeout only after the body resolves (or wrap the whole call in one deadline). A
