@@ -4,6 +4,50 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-10 (evening run) — M2 / T2.2 ABV conditional-by-beverage-type (PR)
+
+**Slice built:** M2 / T2.2 — conditional ABV comparison. One slice only.
+
+**Slice selection:** on entry `main` had M0, T1.1 (PR #1), T1.2 (PR #2), T2.1 (PR #3)
+merged, no open BLOCKER/MAJOR/FAIL. The strict-next TODO was **T2.2** — also squarely
+on the critical path (single-label core). Pure TS, no inference keys needed, so safe
+for an unattended run. The connected-folder `planning/*` copies still lag (~3 PRs
+behind); built off `main` per AGENTS.md §0.
+
+**What was built**
+- `src/lib/comparison/abv.ts` (pure/deterministic):
+  - `parseAbv(input)` → `{abv, proof, hasTableWine, hasLightWine, usesAbvAbbrev,
+    finerThanTenthPrecision}`. ABV uses an **anchored** `% Alc./Vol.|ABV|alcohol by
+    volume` regex with a bare-`%` fallback (so an earlier unrelated percent such as
+    "2% added flavors" can't be mistaken for the ABV); proof parsed separately and
+    excluded from the `%` search.
+  - `compareAbv(expected, found, beverageType, {tolerance=0.0})` → `FieldResult`.
+    Spirits: ABV always required → absent = `mismatch`. Wine: "Table Wine"/"Light
+    Wine" substitutes for a numeric ABV → `match` (not missing); expected-number but
+    none + no designation → `mismatch`. Beer: ABV optional → absent = `match`;
+    expected-but-omitted → `review` (explicitly not a failure); "ABV" abbreviation and
+    >0.1% precision downgrade a clean match to `review`. Numeric compare honours
+    tolerance; proof≈2×ABV inconsistency → `review`; ABV derivable from proof.
+    Display values rounded (no float artifacts) for the "73-year-old" UX bar.
+- `src/lib/comparison/index.ts` — exports `compareAbv`, `parseAbv`, types.
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `vitest run` **111/111**
+green (28 new ABV tests, extractor not involved — pure engine, no live API); `next
+lint` clean.
+
+**Reviews:** code auditor — 1 MAJOR (unanchored `%` could grab an earlier percent →
+wrongly fail a compliant label) **FIXED + regression-tested** this run; rest MINOR/NIT
+logged to BACKLOG. Compliance — **all PASS** vs CONTEXT §5 / PROJECT_PLAN §8 (spirits
+required, wine Table Wine substitute, beer optional + format flags); one DEFERRED edge
+(conditionally-required beer ABV for added-flavors/state-law) logged for the M5 README
+limitations note. See AUDIT.md / COMPLIANCE.md.
+
+**Next task:** M2 / T2.3 — Net contents (parse value+unit; mL/L/fl oz normalize;
+numeric compare). T2.4 (Government Warning strict+diff) and T2.5 (aggregate verdict)
+follow, then T1.3 (`/api/verify`) is unblocked.
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
 ## 2026-06-10 (overnight run) — M2 / T2.1 normalization + brand/class-type match (PR)
 
 **Slice built:** M2 / T2.1 — the comparison engine's tolerant text core (normalization
