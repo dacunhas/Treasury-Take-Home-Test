@@ -5,6 +5,31 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-10 — M2 / T2.2 ABV conditional slice
+
+**Overall: PASS.** All five criteria PASS vs CONTEXT §5 / PROJECT_PLAN §3 & §8.
+
+1. **Spirits ABV required; absence flagged — PASS.** `compareAbv` spirits branch with
+   no ABV → `mismatch` (aggregates to fail, not a silent pass).
+2. **Wine "Table Wine"/"Light Wine" substitute not failed — PASS.** Returns `match`
+   with a plain-language note; never `missing`/`mismatch` for the designated case.
+3. **Beer ABV optional + format rules — PASS.** Absent → `match`; expected-but-omitted
+   → `review` ("not a failure"); disallowed "ABV" abbrev (`/\babv\b/i`, leaves
+   "Alc./Vol." alone) and >0.1% precision downgrade match→review.
+4. **Numeric compare w/ tolerance + proof≈2×ABV cross-check — PASS.** Default 0.0
+   exact, configurable; proof inconsistency → `review`.
+5. **Human-readable, agent-assist framing (not adjudication) — PASS.** Full-sentence
+   plain language; "Please confirm" on review paths; statuses for a human to act on.
+
+**PROJECT_PLAN §8 line SATISFIED:** "beer-without-ABV and wine 'Table Wine' cases are
+NOT failed; spirits-without-ABV IS flagged."
+
+### DEFERRED (not FAIL — later milestone)
+- CONTEXT §5 edge: beer ABV becomes *required* when the beer has alcohol from added
+  flavors/nonbeverage ingredients, or where state law requires it. T2.2 treats beer
+  ABV as unconditionally optional (the form has no ingredient/state input). Out of
+  T2.2 scope; add a one-line README limitations note in M5. Logged to BACKLOG.
+
 ## 2026-06-09 — M0 scaffold slice
 
 **Overall: PASS for M0 foundations.** Government Warning is verbatim and test-pinned;

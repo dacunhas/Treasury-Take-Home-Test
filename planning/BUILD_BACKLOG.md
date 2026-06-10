@@ -104,12 +104,19 @@ Grouped by the PROJECT_PLAN §7 milestones.
   29 new tests; 83/83 total green; slice typechecks clean (strict +
   `noUncheckedIndexedAccess`).
 
-### T2.2 — ABV (conditional by beverage type)  [TODO]
+### T2.2 — ABV (conditional by beverage type)  [DONE 2026-06-10]
 - Parse numeric %; tolerance compare; proof = 2×ABV cross-check. Conditional rules:
   spirits required; wine "Table Wine"/"Light Wine" substitute allowed (7–14%);
   beer optional + flag "ABV" abbreviation + 0.1% precision.
 - **Accept:** unit tests for each beverage type incl. beer-without-ABV (pass) and
   spirits-without-ABV (fail).
+- Done: `src/lib/comparison/abv.ts` — pure `parseAbv` (anchored `% Alc./Vol.` regex
+  with bare-`%` fallback; proof; Table/Light Wine; disallowed "ABV" abbrev; >0.1%
+  precision) + `compareAbv(expected, found, beverageType, {tolerance=0.0})`. Spirits
+  ABV-absent → `mismatch`; wine Table/Light Wine substitute → `match`; beer ABV-absent
+  → `match` (optional), expected-but-omitted → `review`; numeric compare w/ tolerance;
+  proof≈2×ABV inconsistency → `review`; derive-ABV-from-proof. 28 unit tests; 111/111
+  total green; `tsc`/`next lint` clean. Exported via `comparison/index.ts`.
 
 ### T2.3 — Net contents  [TODO]
 - Parse value+unit; normalize mL/L/fl oz; numeric compare.
@@ -186,6 +193,16 @@ Grouped by the PROJECT_PLAN §7 milestones.
 ---
 
 ## Carry-over from review (from AUDIT.md / COMPLIANCE.md — address in owning milestone)
+- [M2/T2.x or M5 docs] Auditor MINOR: ABV proof-only spirits path skips the explicit
+  proof≈2×ABV cross-check (derivation can't disagree with itself) — add a clarifying
+  comment / decide if expected-side proof should be cross-checked.
+- [M2 or M5 docs] Auditor MINOR: `finerThanTenthPrecision` is computed for all types
+  but only consumed for beer (spec scopes 0.1% rule to beer) — confirm intent or
+  surface for wine/spirits.
+- [M5 README/limitations] Compliance DEFERRED: beer ABV becomes *required* when the
+  beer has alcohol from added flavors/nonbeverage ingredients or where state law
+  requires it; T2.2 treats beer ABV as unconditionally optional (form has no
+  ingredient/state input). Note as a documented limitation.
 - [M2] Pin an exact-boundary regression test landing on `ratio === 0.80` / `=== 0.95`
   to lock the `>=` threshold semantics (T2.1 AUDIT NIT). Bands covered mid-range.
 - [M2] Add a direct `compareClassType` missing/null test for parity with

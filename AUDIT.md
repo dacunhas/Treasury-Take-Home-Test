@@ -5,6 +5,32 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-10 — M2 / T2.2 ABV conditional slice
+
+**Verdict: 1 MAJOR (fixed in-run), 3 MINOR, 2 NIT. No BLOCKER. Engine pure, no secrets.**
+
+Audited `src/lib/comparison/abv.ts` + `abv.test.ts` + `index.ts`. Pure/deterministic,
+null-safe under `noUncheckedIndexedAccess`, no I/O, no thrown stack traces on bad
+input, no perf trap vs the 5s budget.
+
+### MAJOR — RESOLVED this run
+- **`abv.ts` ABV percent regex was unanchored** — took the *first* `%` in the string,
+  so an OCR blob like "2% added flavors … 45% Alc./Vol." parsed `abv=2` and could
+  wrongly **fail a compliant label** (realistic for the beer added-flavors case).
+  **Fix applied:** prefer a percent anchored to an alc/vol/ABV phrase, bare-`%`
+  fallback only. Regression tests added (4). Re-verified 111/111 green. → Resolved.
+
+### MINOR (logged to BACKLOG)
+- Proof-only spirits path skips the explicit proof≈2×ABV cross-check (derivation is
+  self-consistent) — add a clarifying comment / decide on expected-side proof check.
+- Display rounding: addressed in-run (`fmt()` rounds user-facing values) — was MINOR.
+- `finerThanTenthPrecision` computed for all types, consumed only for beer (spec scopes
+  the 0.1% rule to beer) — confirm intent.
+
+### NIT (logged to BACKLOG)
+- "No expected value" review message is type-agnostic (cosmetic).
+- Add a `parseAbv(null)` test — done in-run.
+
 ## 2026-06-09 — M0 scaffold slice
 
 **Verdict: No BLOCKER/MAJOR findings. Slice is clean. 4 minor/nit polish items.**
