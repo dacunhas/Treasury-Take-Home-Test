@@ -11,3 +11,18 @@ export {
   parseExtractedLabel,
 } from './gemini';
 export type { GeminiExtractorOptions } from './gemini';
+export {
+  SonnetExtractor,
+  SONNET_SUPPORTED_MIME_TYPES,
+  SONNET_PROMPT,
+  SONNET_JSON_INSTRUCTION,
+  buildSonnetRequestBody,
+  extractAnthropicText,
+} from './sonnet';
+export type { SonnetExtractorOptions } from './sonnet';
+export { RoutingExtractor } from './router';
+export type {
+  RoutedExtraction,
+  RoutingExtractorOptions,
+  ExtractionTier,
+} from './router';

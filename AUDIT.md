@@ -91,3 +91,49 @@ mocked in all tests. Audited `src/lib/extractor/{types,gemini,index}.ts` + tests
 ### Resolution status
 All MINOR/NIT items above were fixed and re-tested within the run, except the two
 explicitly logged to BACKLOG. 33/33 tests green; typecheck + lint clean.
+
+---
+
+## 2026-06-09 (evening run) — M1/T1.2 Sonnet deep tier + router
+
+**Verdict: No BLOCKER/MAJOR. Slice is safe to merge. 1 MINOR + 2 NIT.**
+
+Audited: `src/lib/extractor/sonnet.ts`, `src/lib/extractor/router.ts`, their test
+files, and the `index.ts` export additions, against `gemini.ts`/`types.ts`/`config.ts`
+conventions and PROJECT_PLAN §2/§3. Tests 54/54 green; `tsc --noEmit` and `next lint`
+clean. Transport fully mocked (injected `fetchImpl`/fake extractors — no live calls).
+
+### Verified clean (no findings)
+- **Secrets:** Anthropic key is header-only (`x-api-key`), never in URL/body/logs.
+  Non-2xx maps to a status-only secret-free `ExtractionError('http')`; a test proves a
+  leaked-key (`sk-leak`) provider body is never echoed. Key resolved lazily via
+  `getAnthropicApiKey()`, consistent with the Flash tier.
+- **Module boundaries:** the router escalates through the same `LabelExtractor` seam —
+  no provider special-casing. Sonnet transcribes only (reuses `EXTRACTION_PROMPT` +
+  `parseExtractedLabel`); no verdict logic leaks in.
+- **SLA protection:** deep tier called ONLY when `primaryConfidence < threshold`; the
+  confident path never touches Sonnet. Deep-tier timeout bounded at 7000ms.
+- **Degradation:** empty/safety-blocked → confidence-0 (no throw); malformed JSON via
+  tolerant parser; deep-tier failure falls back to the primary result, still
+  `escalated:true`, carrying only an `ExtractionError['code']` in `deepTierError`.
+- **Coverage:** escalate / no-escalate / threshold boundary / deep-failure-fallback /
+  non-ExtractionError→`unknown` / primary-failure-propagation / env-threshold default.
+
+### MINOR
+- **`sonnet.ts` extract() (and `gemini.ts` parity)** — the `AbortController` timer is
+  cleared in `finally` right after `fetch` resolves, so a slow `await response.json()`
+  is unbounded by `timeoutMs`. Same latent gap as the Flash tier (a consistency
+  carry-over, not a regression); nearest the human-review boundary on the 7s deep tier.
+  Fix: keep the abort signal alive across the body read, in both tiers together. →
+  logged to BACKLOG (M1/T1.3).
+
+### NIT
+- **`sonnet.ts:27`** — `image/gif` is advertised as supported; vision treats it as a
+  single (first) frame. Harmless; noted, no action.
+- **`router.ts` `deepTierError`** — the `'unknown'` literal is correctly a member of
+  `ExtractionError['code']`; the dependency on that union is implicit. Optional: type
+  the constant. NIT only.
+
+### Resolution status
+No fixes required within T1.2 (the one MINOR is a cross-tier carry-over best fixed in
+T1.3; NITs are non-actionable). Carried to BUILD_BACKLOG "Carry-over from review."

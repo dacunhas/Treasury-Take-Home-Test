@@ -58,11 +58,24 @@ Grouped by the PROJECT_PLAN §7 milestones.
   AbortController timeout guards the 5s SLA. 19 mocked unit tests (transport injected
   — no live Gemini). Closes the compliance §3 firewall-seam PARTIAL → PASS.
 
-### T1.2 — Sonnet deep tier + router  [TODO]
+### T1.2 — Sonnet deep tier + router  [DONE 2026-06-09]
 - `SonnetExtractor` (same interface). Router: Flash → if confidence < threshold →
   Sonnet → else return Flash result. Threshold configurable.
 - **Accept:** high-confidence label uses Flash only; forced-low-confidence path
   invokes Sonnet; escalation flagged in the result for the UI.
+- Done: `src/lib/extractor/sonnet.ts` — `SonnetExtractor implements LabelExtractor`
+  (Anthropic Messages vision call; `temperature:0`; JSON-only prompt; key in the
+  `x-api-key` header, never the URL; 7s deep-tier timeout; malformed/empty output
+  degrades to confidence-0; transport failures → secret-free `ExtractionError`).
+  `src/lib/extractor/router.ts` — `RoutingExtractor implements LabelExtractor` with
+  `extractRouted()` returning `{label, escalated, tier, extractorName,
+  primaryConfidence, threshold, deepTierError?}`. Confident path (`>= threshold`)
+  uses Flash ONLY (deep tier never called — protects the 5s SLA); low-confidence
+  path invokes Sonnet and flags `escalated`; deep-tier failure falls back to the
+  primary result still flagged `escalated` (so work reaches human review).
+  Threshold from `getConfidenceThreshold()` (env, 0.7 default), constructor-
+  overridable. 21 new mocked unit tests (13 sonnet + 8 router; transport/extractors
+  injected — no live Anthropic/Gemini). 54/54 total green; `tsc`/`next lint` clean.
 
 ### T1.3 — `/api/verify` route (single)  [TODO]
 - Accept multipart (expected values + beverage type + image). Validate input.
@@ -158,3 +171,17 @@ Grouped by the PROJECT_PLAN §7 milestones.
 ### T5.3 — Deploy to Vercel  [TODO]  *(human checkpoint)*
 - Configure env vars in Vercel; deploy; smoke test from a clean browser.
 - **Accept:** public URL live; sample verification works end-to-end
+
+---
+
+## Carry-over from review (from AUDIT.md / COMPLIANCE.md — address in owning milestone)
+- [M1/T1.3] Extend the abort deadline to cover the response-body read
+  (`response.json()`), not just `fetch`, in BOTH `gemini.ts` and `sonnet.ts` — clear
+  the timeout only after the body resolves (or wrap the whole call in one deadline). A
+  hung/slow body read is currently unbounded by `timeoutMs`; nearest-the-SLA on the 7s
+  deep tier. (AUDIT MINOR, T1.2 run — a Flash-tier carry-over; fix both together so the
+  tiers stay symmetric.)
+- [M1/T1.3] Map a lazily-resolved `MissingConfigError` (missing key) to a friendly
+  `ExtractionError` at the route boundary so the UI never sees a config stack trace.
+  (Carried from the T1.1 run.)
+- [M5] `next@14.2.5` has a security advisory — bump before deploy. (Carried from T1.1.)
