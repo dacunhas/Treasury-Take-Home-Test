@@ -43,6 +43,20 @@ function parseTimeoutEnv(): number {
   return Number.isFinite(raw) && raw > 0 ? raw : 9000;
 }
 const DEFAULT_TIMEOUT_MS = parseTimeoutEnv();
+
+/**
+ * Gemini 3.x models reason ("thinking") by default (3.5-flash default level is
+ * "medium"), which adds several seconds — wasted on a pure transcription task
+ * and a threat to the 5s SLA. We pin the MINIMAL level ("low"). Configurable via
+ * `GEMINI_THINKING_LEVEL`; set it to "off"/"none"/"" to omit the field entirely
+ * (e.g. if ever pointed at a Gemini 2.5 model, which uses thinkingBudget and
+ * would 400 on thinkingLevel).
+ */
+function thinkingLevel(): string | null {
+  const raw = (process.env.GEMINI_THINKING_LEVEL ?? 'low').trim().toLowerCase();
+  if (raw === '' || raw === 'off' || raw === 'none') return null;
+  return raw;
+}
 const DEFAULT_ENDPOINT_BASE =
   'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -77,6 +91,7 @@ export const RESPONSE_SCHEMA = {
 
 /** Build the generateContent request body. Pure — no network, no secrets. */
 export function buildGeminiRequestBody(image: LabelImage): unknown {
+  const level = thinkingLevel();
   return {
     contents: [
       {
@@ -91,6 +106,7 @@ export function buildGeminiRequestBody(image: LabelImage): unknown {
       temperature: 0,
       responseMimeType: 'application/json',
       responseSchema: RESPONSE_SCHEMA,
+      ...(level ? { thinkingConfig: { thinkingLevel: level } } : {}),
     },
   };
 }

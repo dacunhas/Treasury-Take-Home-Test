@@ -23,6 +23,7 @@ import {
   overallPresentation,
 } from '@/lib/ui/format';
 import { validateVerifyForm } from '@/lib/ui/validateForm';
+import { downscaleImageFile } from '@/lib/ui/imageResize';
 import {
   ACCEPT_ATTR,
   ACCEPTED_TYPES_LABEL,
@@ -94,6 +95,17 @@ export default function VerifyForm() {
       const target = validation.focus === 'image' ? imageRef : brandRef;
       target.current?.focus();
       return;
+    }
+
+    // Downscale large photos before upload: trims latency for the 5s budget and
+    // mobile data, with no accuracy cost (the vision model downsamples anyway).
+    // Falls back to the original file on any failure, so it never blocks a verify.
+    if (file instanceof File) {
+      const reduced = await downscaleImageFile(file);
+      if (reduced !== file) {
+        const base = file.name.replace(/\.[^.]+$/, '') || 'label';
+        formData.set('image', reduced, `${base}.jpg`);
+      }
     }
 
     setSubmitState('verifying');

@@ -45,6 +45,11 @@ describe('buildGeminiRequestBody', () => {
     expect(body.generationConfig.responseMimeType).toBe('application/json');
     expect(body.generationConfig.responseSchema.properties).toHaveProperty('confidence');
   });
+
+  it('pins the minimal thinking level by default (5s SLA — no wasted reasoning)', () => {
+    const body = buildGeminiRequestBody(IMAGE) as any;
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' });
+  });
 });
 
 describe('extractModelText', () => {
