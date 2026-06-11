@@ -28,7 +28,7 @@ export const SUPPORTED_MIME_TYPES = [
  * vision model. Overridable via the `GEMINI_MODEL` env var so a future model
  * sunset can be handled by a config change + redeploy — no code change needed.
  */
-const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash';
 /** Upper bound on the Flash call so a hung connection cannot blow the 5s SLA. */
 const DEFAULT_TIMEOUT_MS = 4000;
 const DEFAULT_ENDPOINT_BASE =
@@ -158,7 +158,7 @@ export function parseExtractedLabel(text: string): ExtractedLabel {
 export interface GeminiExtractorOptions {
   /** Defaults to getGeminiApiKey() — resolved lazily on first extract(). */
   apiKey?: string;
-  /** Defaults to `GEMINI_MODEL` env or "gemini-2.5-flash". */
+  /** Defaults to `GEMINI_MODEL` env or "gemini-3.5-flash". */
   model?: string;
   /** Injectable transport for testing. Defaults to global fetch. */
   fetchImpl?: typeof fetch;
