@@ -69,6 +69,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     if (err instanceof MissingConfigError) {
       // Server misconfiguration (no inference key). Don't leak the key name.
+      console.error('[verify] missing inference configuration (no API key present)');
       return NextResponse.json(
         {
           error:
@@ -78,6 +79,13 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
     if (err instanceof ExtractionError) {
+      // Diagnostic only: record the machine code + our own (secret-free) error
+      // message so a production extraction failure shows the provider status in
+      // the Vercel function log. The message NEVER contains the API key — the
+      // extractors deliberately omit the provider body (see gemini.ts/sonnet.ts).
+      console.error(
+        `[verify] extraction failed: code=${err.code} detail=${err.message}`,
+      );
       const message =
         err.code === 'input'
           ? 'That image could not be processed. Please upload a clear PNG, JPEG, or WebP.'
@@ -85,6 +93,9 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.json({ error: message }, { status: 502 });
     }
     // Unknown server error — friendly message, no stack trace to the client.
+    console.error(
+      `[verify] unexpected error: ${(err as Error)?.name ?? 'Error'}: ${(err as Error)?.message ?? String(err)}`,
+    );
     return NextResponse.json(
       {
         error:
