@@ -426,3 +426,24 @@ Jenny's "request a better image"); unknown→500. Matches PROJECT_PLAN §5.
 ### Open items to close before submission
 - [ ] UI consumes `/api/verify` and surfaces latency + escalation (M3).
 - [ ] Live latency check on the deployed URL (M5).
+
+---
+
+## 2026-06-11 (overnight) — M3 / T3.2 error handling
+
+**Verdict: PASS — 9/9 criteria satisfied or correctly deferred. 203/203 green; no regressions.**
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| 1 | Wrong image type → friendly msg | PASS | `validateForm.isAcceptedImageType` → "That image type is not supported…"; wired into preflight; tested. |
+| 2 | Oversize image → friendly msg | PASS | `size > MAX_IMAGE_BYTES` → "…too large…under 10 MB"; limit single-sourced via `imageConstraints.ts`; inclusive-boundary test. |
+| 3 | Empty form / missing image → friendly msg | PASS | `hasAnyExpected` guard + `image===null||size===0`; ordering tested. |
+| 4 | Model/network failure → friendly (T3.1 intact) | PASS | `VerifyForm` try/catch unchanged: network catch + non-JSON gateway guard; full suite green. |
+| 5 | Unreadable image → "request a better image" | PASS | Client still surfaces `data.error` (API `ExtractionError` body); help text also primes a sharper image. |
+| 6 | Partial extraction → `missing` fields | PASS | Untouched; `format.ts` `missing` presentation + `aggregate` intact. |
+| 7 | No crash / no stack trace | PASS | Preflight returns a string; all API errors friendly strings. |
+| 8 | Accessibility — focus + announce | PASS (slice boundary) | New refs + `target.current?.focus()`; error container `role=alert`+`aria-live`; `aria-describedby` on image input. Full a11y sweep = T3.3 (deferred, not fail). |
+| 9 | Statelessness / no-PII | PASS | New modules pure/I-O-free; no persistence introduced. |
+
+**Correctly deferred (not failures):** T3.3 full a11y sweep, T3.4 sample-label browser E2E.
+**Strengths:** single source of truth for size + MIME across client/server with a drift-guard test; preflight wording mirrors the server; defense-in-depth (server re-validates).
