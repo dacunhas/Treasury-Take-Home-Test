@@ -45,6 +45,26 @@ function getExtractor(): RoutedExtractor {
   return cachedExtractor;
 }
 
+/**
+ * DIAGNOSTIC (benchmark-only): allow a request to pin which Gemini model the
+ * fast tier uses, so latency/accuracy of candidate models can be compared on the
+ * live URL without a redeploy. Strictly allow-listed to a few cheap Gemini Flash
+ * models — an unknown value is ignored and the configured default is used, so it
+ * cannot be abused to invoke arbitrary/expensive models. Remove or gate to
+ * non-production before final submission.
+ */
+const BENCHMARK_MODELS: readonly string[] = [
+  'gemini-3.5-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest',
+];
+function overrideExtractor(formData: FormData): RoutedExtractor | null {
+  const raw = formData.get('__model');
+  const model = typeof raw === 'string' ? raw.trim() : '';
+  if (!model || !BENCHMARK_MODELS.includes(model)) return null;
+  return new RoutingExtractor(new GeminiExtractor({ model }), new SonnetExtractor());
+}
+
 export async function POST(request: Request): Promise<Response> {
   let formData: FormData;
   try {
@@ -61,7 +81,8 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const parsed = await parseVerifyForm(formData);
-    const result = await runVerification(parsed, getExtractor());
+    const extractor = overrideExtractor(formData) ?? getExtractor();
+    const result = await runVerification(parsed, extractor);
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
     if (err instanceof VerifyValidationError) {

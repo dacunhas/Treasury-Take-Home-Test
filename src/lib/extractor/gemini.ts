@@ -2,7 +2,7 @@
  * GeminiExtractor — the fast primary tier (CONTEXT §4, PROJECT_PLAN §2).
  *
  * One structured-output vision call to Gemini Flash: low temperature, strict
- * JSON schema (brand, classType, abv, proof, netContents, warningText, rawText,
+ * JSON schema (brand, classType, abv, proof, netContents, warningText,
  * confidence). The model ONLY transcribes the label; no verdict logic lives
  * here. Pure helpers (request building + response parsing) are exported so they
  * can be unit-tested without any network call, and the constructor accepts an
@@ -83,7 +83,6 @@ export const RESPONSE_SCHEMA = {
     proof: { type: 'string', nullable: true },
     netContents: { type: 'string', nullable: true },
     warningText: { type: 'string', nullable: true },
-    rawText: { type: 'string', nullable: true },
     confidence: { type: 'number' },
   },
   required: ['confidence'],
