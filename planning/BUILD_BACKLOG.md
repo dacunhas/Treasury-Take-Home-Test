@@ -118,9 +118,19 @@ Grouped by the PROJECT_PLAN §7 milestones.
   proof≈2×ABV inconsistency → `review`; derive-ABV-from-proof. 28 unit tests; 111/111
   total green; `tsc`/`next lint` clean. Exported via `comparison/index.ts`.
 
-### T2.3 — Net contents  [TODO]
+### T2.3 — Net contents  [DONE 2026-06-10]
 - Parse value+unit; normalize mL/L/fl oz; numeric compare.
 - **Accept:** unit tests for unit conversions and mismatches.
+- Done: `src/lib/comparison/{netContents.ts,netContents.test.ts}` + index export —
+  pure/deterministic. `parseNetContents` reads value+unit, anchoring the number to a
+  unit so lot codes / surrounding text don't steal the parse ("Lot 12345 / 750 mL"
+  -> 750 mL); tolerant of "750ml", "1 L", "0,75 L", "12 fl. oz.". `UNITS` table
+  normalizes to canonical mL (mL/cL/L metric; fl oz/pt/qt/gal US, 1 US fl oz =
+  29.5735 mL). `compareNetContents` compares within a 1% relative tolerance: equal
+  same-system (1 L vs 1000 mL) -> match; equal cross-system (750 mL vs 25.4 fl oz)
+  -> review (never a silent pass — metric is required for spirits/wine); different
+  fill (750 vs 700) -> mismatch; unit-less label number -> review; unreadable/empty
+  -> missing. 31 unit tests. 142/142 total green; `tsc`/eslint clean.
 
 ### T2.4 — Government Warning (strict + diff)  [TODO]
 - Checks: present; "GOVERNMENT WARNING" uppercase; full text == canonical
@@ -217,3 +227,10 @@ Grouped by the PROJECT_PLAN §7 milestones.
   `ExtractionError` at the route boundary so the UI never sees a config stack trace.
   (Carried from the T1.1 run.)
 - [M5] `next@14.2.5` has a security advisory — bump before deploy. (Carried from T1.1.)
+- [M2/T2.5] Thread `beverageType` into the net-contents verdict so an equal quantity
+  in U.S. fl oz on a BEER label resolves to `match` (currently `review`); spirits/wine
+  stated in fl oz stays a flag. Conservative `review` ships now; the full conditional
+  belongs with the aggregate verdict (mirror `abv.ts`). (T2.3 AUDIT MAJOR M2;
+  compliance ruled the conservative default a PASS, not a FAIL.)
+- [M2 NIT] Net-contents `gal` factor is 3785.41 vs 3785.411784 (~5e-7 relative,
+  harmless under the 1% tolerance); tighten only if tolerance is ever reduced.

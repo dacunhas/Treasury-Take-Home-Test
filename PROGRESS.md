@@ -4,6 +4,53 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-10 (evening run) — M2/T2.3 net-contents comparison
+
+**Slice built:** M2 / T2.3 — net-contents parse + normalize + compare. Next strict TODO
+after T2.2 (ABV); on the single-label critical path. Built on freshly-cloned `main`
+(HEAD `8525c14`, PR #4 merged) — the connected-folder planning copies lag main by
+several PRs, so main was the source of truth per the run contract.
+
+**What was built**
+- `src/lib/comparison/netContents.ts` — `parseNetContents()` + `compareNetContents()`,
+  pure/deterministic/I-O-free. Parses value+unit, **anchoring the number to a unit**
+  so a lot code or surrounding words can't steal the parse ("Lot 12345 / 750 mL" ->
+  750 mL), with a bare-number fallback for a unit-less expected value. `UNITS` table
+  normalizes to canonical millilitres (mL/cL/L metric; fl oz/pt/qt/gal U.S., 1 US fl
+  oz = 29.5735 mL). Tolerant of "750ml", "1 L", "0,75 L" (comma decimal), "12 fl. oz.".
+- Verdict (1% relative tolerance, configurable): equal same-system (1 L vs 1000 mL) ->
+  **match**; equal cross-system (750 mL vs 25.4 fl oz) -> **review** (never a silent
+  pass — spirits/wine must state metric, a human glances); different fill (750 vs 700,
+  375 vs 750) -> **mismatch**; label number with no unit -> review; unreadable/empty
+  label -> missing.
+- `src/lib/comparison/index.ts` — exports the fn + `parseNetContents` + types.
+
+**Verification (sandbox /tmp clone, node_modules reused from prior clone — disk):**
+- `tsc --noEmit` — clean.
+- `vitest run` — **142/142 passing** (31 in `netContents.test.ts`). No live API calls
+  (comparison engine is pure; extractor not involved).
+- `eslint` on the new files — clean. (Full `next build` not re-run; pure-TS slice, no
+  Next runtime deps — consistent with prior M2 runs' disk-constrained validation.)
+
+**Reviews:** code auditor = no BLOCKER; 2 MAJOR. **M1** (regex grabbed the first number
+in the string, dropping a unit behind a lot code) was a real "compliant label wrongly
+flagged" bug — **FIXED in-run** (unit-anchored parse + 4 new surrounding-text tests).
+**M2** (net-contents verdict not yet beverage-type-aware, so an equal fl-oz quantity on
+a beer label is `review` not `match`) needs the aggregate-verdict wiring — compliance
+reviewer ruled the conservative `review` a **PASS** (it never wrongly passes), so M2 is
+logged to BACKLOG for T2.5, not gold-plated now. Compliance overall = **PASS**.
+
+**Self-triage:** M1 fixed + re-tested; M2 + MINOR/NIT logged to BACKLOG "Carry-over."
+
+**Next task:** M2 / T2.4 — Government Warning strict check + word-level diff (canonical
+constant + `WarningCheckResult` already in place from M0).
+
+**Blockers:** none.
+
+**Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-10 (evening run) — M2 / T2.2 ABV conditional-by-beverage-type (PR)
 
 **Slice built:** M2 / T2.2 — conditional ABV comparison. One slice only.
