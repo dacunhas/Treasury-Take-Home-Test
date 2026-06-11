@@ -4,6 +4,55 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-10 (overnight run) — M2/T2.4 Government Warning strict check + diff
+
+**Slice built:** M2 / T2.4 — strict Government Warning check with word-level diff. The
+next strict TODO after T2.3 (net contents); on the single-label critical path. Built on
+freshly-cloned `main` (HEAD `7ca3658`, PR #5 merged) — the connected-folder planning
+copies lag main by several PRs, so main was the source of truth per the run contract.
+
+**What was built**
+- `src/lib/comparison/warning.ts` — `checkGovernmentWarning(warningText)` +
+  `diffWarningWords(canonical, found)`, pure / deterministic / I-O-free.
+  - `present` (block exists), `prefixCaps` ("GOVERNMENT WARNING" present, **anchored to
+    the start**, all-caps), `textMatch` (whitespace-normalized, word-for-word, case-
+    sensitive equality vs the canonical constant), and a coalesced LCS word-level `diff`.
+  - Status ladder: exact + caps -> **match**; reworded / shortened / extra text ->
+    **mismatch** (+ diff); right words but prefix not all-caps -> **mismatch**; all words
+    present, prefix capitalized, only body letter-casing differs -> **review**
+    (human-in-the-loop, not a hard fail); empty/blank -> **missing**.
+  - Every non-missing result carries an honest `FONT_NOTE`: caps + wording are verified
+    from text, but true bold/font-size cannot be confirmed from an extracted-text check.
+- `src/lib/comparison/warning.test.ts` — 13 tests: the full T2.4 acceptance matrix
+  (exact pass, wrapped-but-correct pass, title-case prefix fail, reworded fail+diff,
+  missing fail, body-casing review, extra-trailing-text fail) + a `diffWarningWords` suite.
+- `src/lib/comparison/index.ts` — exports `checkGovernmentWarning`, `diffWarningWords`.
+
+**Verification (sandbox /tmp clone; node_modules reused from a prior clone via symlink — disk):**
+- `tsc --noEmit` — clean.
+- `vitest run` — **155/155 passing** (13 in warning.test.ts). No live API calls (the
+  comparison engine is pure; extractor not involved). NB: vitest exits non-zero only on a
+  benign `EACCES` writing its results cache into the read-only symlinked node_modules —
+  the suite itself fully passes (degraded-validation artifact, noted; not a test failure).
+- `eslint` on the new files — clean. (Full `next build` not re-run; pure-TS slice, no Next
+  runtime deps — consistent with prior disk-constrained M2 runs.)
+
+**Reviews:** code auditor = no BLOCKER; **1 MAJOR** (unanchored prefix regex could read a
+caps occurrence anywhere, and a compliant-but-noisy extraction would route to mismatch) —
+**FIXED in-run**: anchored `detectPrefixCaps` to `^`, added a leading-text test. **1 MINOR**
+(the reworded + lowercase-prefix fallthrough branch was untested) — **FIXED in-run** (added
+the test). Compliance = **PASS** on all six T2.4 criteria; recorded the deliberate
+body-casing -> `review` interpretation. The OCR-noise downgrade question is logged to
+BACKLOG (low-risk; extractor returns an isolated `warningText`) — not guessed.
+
+**Next task:** M2 / T2.5 — aggregate verdict (combine field + warning results into overall
+pass/review/fail). After T2.5, the M2 comparison engine is complete and T1.3 `/api/verify`
+becomes unblocked.
+
+**Blockers:** none.
+
+**Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
 ## 2026-06-10 (evening run) — M2/T2.3 net-contents comparison
 
 **Slice built:** M2 / T2.3 — net-contents parse + normalize + compare. Next strict TODO

@@ -132,7 +132,7 @@ Grouped by the PROJECT_PLAN §7 milestones.
   fill (750 vs 700) -> mismatch; unit-less label number -> review; unreadable/empty
   -> missing. 31 unit tests. 142/142 total green; `tsc`/eslint clean.
 
-### T2.4 — Government Warning (strict + diff)  [TODO]
+### T2.4 — Government Warning (strict + diff)  [DONE 2026-06-10]
 - Checks: present; "GOVERNMENT WARNING" uppercase; full text == canonical
   (whitespace-normalized); word-level diff on mismatch. Honesty note re: bold/font
   not detectable from text.
