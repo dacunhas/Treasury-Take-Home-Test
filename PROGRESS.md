@@ -4,6 +4,59 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-11 (evening run) — M1 / T1.3 `/api/verify` route
+
+**Slice built:** T1.3 — single-label verification API route. This was the strict-next
+TODO after all of M2 (T2.1–T2.5) merged; the comparison engine it depends on now
+exists, so the route was unblocked and is the next critical-path slice.
+
+**What was built**
+- `src/app/api/verify/handler.ts` — transport-agnostic core, split out so it is unit
+  testable with a MOCKED extractor:
+  - `parseVerifyForm(formData)` — validates the multipart form (brand, classType,
+    netContents, beverageType, image required; **abv intentionally optional** so the
+    §5 conditional-by-beverage-type rules apply downstream), enforces a MIME allow-list
+    (derived from `SUPPORTED_MIME_TYPES`) and a 10 MB cap, reads the image into memory
+    (base64) and never persists it. Throws `VerifyValidationError` (friendly 400s).
+  - `runVerification(parsed, extractor)` — times `extractor.extractRouted` +
+    `compareLabel`, returns `VerificationResult { fields, warning, overall, latencyMs,
+    escalated }`. Verdict comes only from the pure engine, never the model.
+- `src/app/api/verify/route.ts` — thin Next.js `POST` adapter (Node runtime). Lazily
+  builds `RoutingExtractor(new GeminiExtractor(), new SonnetExtractor())`; maps errors
+  to friendly JSON: 400 validation / 400 non-multipart / 503 missing-key (no key name
+  leaked) / 502 ExtractionError (input vs transient split) / 500 unknown / 405 non-POST.
+  No stack trace ever reaches the client.
+- `src/app/api/verify/handler.test.ts` — 12 tests, extractor MOCKED (in-memory fake,
+  no network): validation matrix (empty form, missing fields, bad beverage type, no
+  image, unsupported MIME, oversize, blank-ABV-for-beer) + assembly (matching label →
+  pass, escalation flag propagation, altered warning → fail, in-memory image passthrough).
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `next lint` on the new
+files clean; `vitest run` **183/183 passing** (12 new). No live API calls.
+
+**Reviews:** code auditor = **no BLOCKER/MAJOR**; 1 MINOR (MIME error message said
+"PNG, JPEG, or WebP" while the allow-list also accepts HEIC/HEIF) + 2 NITs (a redundant
+defensive image re-check; `imageBytes` diagnostic-only). Compliance = **PASS on all 6
+in-scope criteria** (multipart+validation, conditional-ABV boundary, 5s SLA seam /
+escalation propagation, stateless/no-PII, firewall seam preserved, friendly errors).
+
+**Self-triage:** fixed the MINOR in-run — `SUPPORTED_TYPES_LABEL` is now derived from
+`SUPPORTED_MIME_TYPES` (single source of truth), so messages list every accepted type;
+re-ran tsc + tests green. NITs left as-is per the auditor ("no action required"); not
+gold-plated.
+
+**Open finding for Steve (pre-existing, repo-wide — NOT this slice):** `next@14.2.5`
+carries a security advisory (npm deprecation warning on install; patched in a later
+14.2.x). Bumping Next is a dependency-hygiene task best done as its own small PR before
+submission — logged here so it isn't lost. Not a T1.3 blocker.
+
+**Next task:** M3 / T3.1 — single-label UI screen (form + dropzone + results card,
+latency display, "running a closer check…" on escalation), consuming this route.
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE (PR opened against main).**
+
+---
+
 ## 2026-06-11 (overnight run ~1 AM ET) — M2/T2.5 Aggregate verdict
 
 **Slice built:** M2 / T2.5 — aggregate verdict. This closes the M2 comparison engine

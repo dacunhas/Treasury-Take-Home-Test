@@ -337,3 +337,55 @@ the API route (T1.3), keeping the engine clean (CONTEXT §4, §8).
 - Net-contents is not yet beverage-type aware (fl-oz-on-beer -> `review`, not `match`).
   Pre-existing T2.3 carry-over; T2.5 is its natural future home (beverageType in scope).
   Conservative `review` over-flags, never wrong-passes -> stays PASS.
+
+---
+
+## 2026-06-11 — M1 / T1.3 `/api/verify` route
+
+**Overall: PASS** on all six in-scope criteria. UI surfacing, deploy/live-latency, and
+batch are correctly DEFERRED (M3/M5), not FAIL.
+
+### 1. Multipart accept + input validation — PASS
+`route.ts` reads `request.formData()` (non-multipart → friendly 400). `parseVerifyForm`
+reads the expected values + beverage-type selector + image, validates presence/type/
+size, returns the `VerificationResult` shape at 200, and every bad-input path is a 4xx
+with a message — never a stack trace (T1.3 acceptance met). Tests cover the matrix.
+
+### 2. Conditional ABV at the route boundary — PASS
+`abv` is excluded from required fields; a blank value passes through as `ExpectedLabel.abv
+= ''` for all beverage types, delegating §5 to `compareAbv(..., beverageType)`. The route
+cannot wrongly fail compliant beer/table-wine. Test: blank ABV + beer parses cleanly.
+
+### 3. 5s SLA seam — PASS
+`runVerification` measures `latencyMs` around extraction + comparison and returns it for
+the UI's "Verified in N s". `escalated` is propagated straight from `RoutedExtraction`;
+the route adds no escalation logic and calls `extractRouted` once — the deep (Sonnet)
+tier fires only inside the router on low confidence, so the common path stays single-shot
+Flash. No hard timeout/abort, which is consistent with the spec (escalated cases may run
+~5–7s); surfacing measured latency is the required behavior here.
+
+### 4. Stateless / no-PII — PASS
+Image held in memory only (Buffer → base64), nothing persisted; no `fs`/DB anywhere.
+`runtime='nodejs'`, `dynamic='force-dynamic'`. Matches CONTEXT §3.
+
+### 5. Firewall seam preserved — PASS
+Route depends only on the `RoutedExtractor` interface; the concrete
+`RoutingExtractor(Gemini, Sonnet)` is built behind `getExtractor()`. Handler is generic
+over the seam (tests inject a fake), so a local OCR tier could drop in without touching
+`handler.ts`. No direct provider SDK calls.
+
+### 6. Friendly error paths — PASS
+`VerifyValidationError`→400; `MissingConfigError`→503 (no key name leaked);
+`ExtractionError`→502 with input-vs-transient split (the unreadable-label branch mirrors
+Jenny's "request a better image"); unknown→500. Matches PROJECT_PLAN §5.
+
+### Correctly DEFERRED (not FAIL)
+- UI surfacing of `latencyMs`/`escalated`/warning diff — M3.
+- Deploy + live <5s latency measurement on the Vercel URL — M5.
+- Batch mode (CSV + multi-image) — later slice, out of single-label scope.
+- Hard 5s timeout/abort enforcement — not required by T1.3 (could be a hardening
+  nice-to-have on the backlog).
+
+### Open items to close before submission
+- [ ] UI consumes `/api/verify` and surfaces latency + escalation (M3).
+- [ ] Live latency check on the deployed URL (M5).
