@@ -43,7 +43,7 @@ const DEFAULT_ENDPOINT = 'https://api.anthropic.com/v1/messages';
  */
 export const SONNET_JSON_INSTRUCTION =
   ' Respond with ONLY a single JSON object (no prose, no code fence) with exactly ' +
-  'these keys: brand, classType, abv, proof, netContents, warningText, rawText, ' +
+  'these keys: brand, classType, abv, proof, netContents, warningText, ' +
   'confidence. Use null for any field not present on the label. confidence is a ' +
   'number from 0 to 1.';
 
