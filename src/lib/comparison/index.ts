@@ -16,3 +16,5 @@ export type { AbvCompareOptions, ParsedAbv } from './abv';
 export { compareNetContents, parseNetContents } from './netContents';
 export type { NetContentsCompareOptions, ParsedNetContents } from './netContents';
 export { checkGovernmentWarning, diffWarningWords } from './warning';
+export { aggregateOverall, compareLabel } from './aggregate';
+export type { Overall, LabelComparison } from './aggregate';

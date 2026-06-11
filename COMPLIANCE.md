@@ -300,3 +300,40 @@ plain-language and test-asserted free of stack traces.
 
 ### Open items to close before submission
 - [ ] Thread `beverageType` into the net-contents verdict at T2.5 (BACKLOG carry-over).
+
+---
+
+## 2026-06-11 — M2/T2.5 Aggregate verdict slice
+
+**Overall: PASS on all 5 criteria. Zero FAIL. One MINOR (already-tracked) for BACKLOG.**
+This closes the M2 comparison engine (T2.1–T2.5).
+
+### 1. Aggregate rule implemented exactly as specified — **PASS**
+`aggregateOverall` returns `fail` if any field/warning severity is `fail`, else `review`
+if any `review`, else `pass` — verbatim to T2.5 accept + PROJECT_PLAN §3. Tests cover all
+three bands, fail>review precedence, and the empty-field-list case.
+
+### 2. Government Warning treated strictly — **PASS**
+`warningSeverity` maps warning `missing`/`mismatch` -> `fail` independently of the lenient
+field mapping, so an absent or reworded mandatory warning rolls up to overall `fail` even
+when every field matches (CONTEXT §5 highest-value check). Locked by two tests.
+
+### 3. Conditional ABV by beverage type honored through `compareLabel` — **PASS**
+`compareLabel` threads `expected.beverageType` into `compareAbv` unchanged and does not
+post-process the returned status. `combineAbv` returns `null` when neither abv nor proof
+present, preserving the conditional-omission path. Integration tests: spirits-no-ABV->fail,
+beer-no-ABV not failed. (Table-wine allowance lives in compareAbv's own T2.2 coverage.)
+
+### 4. Match vs Review vs Mismatch human-in-the-loop preserved — **PASS**
+Ordinary `missing` -> `review` (flag for a human / better image), not a silent pass or an
+auto-fail — the "assist tool, not adjudicator" posture (CONTEXT §1/§7). The asymmetry vs
+the warning's strict `missing->fail` is deliberate and documented in the file header.
+
+### 5. Pure / deterministic / stateless — **PASS**
+Pure functions only; no I/O, persistence, or PII capture. Latency/escalation deferred to
+the API route (T1.3), keeping the engine clean (CONTEXT §4, §8).
+
+### BACKLOG note (MINOR, already tracked — not a blocker)
+- Net-contents is not yet beverage-type aware (fl-oz-on-beer -> `review`, not `match`).
+  Pre-existing T2.3 carry-over; T2.5 is its natural future home (beverageType in scope).
+  Conservative `review` over-flags, never wrong-passes -> stays PASS.

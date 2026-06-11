@@ -139,7 +139,7 @@ Grouped by the PROJECT_PLAN §7 milestones.
 - **Accept:** test matrix — exact (pass); title-case prefix (fail); reworded (fail);
   missing (fail); shrunk-but-correct-text (pass on text, note formatting limit).
 
-### T2.5 — Aggregate verdict  [TODO]
+### T2.5 — Aggregate verdict  [DONE 2026-06-11]
 - Combine field + warning results into overall `pass / review / fail`.
 - **Accept:** any FAIL → fail; any REVIEW and no FAIL → review; else pass.
 
