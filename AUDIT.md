@@ -5,6 +5,38 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-10 — M2/T2.4 Government Warning strict check
+
+**Verdict: substantially clean. No BLOCKER. 1 MAJOR + 1 MINOR — both fixed in-run.**
+
+Audited: `src/lib/comparison/warning.ts`, `warning.test.ts`, `comparison/index.ts`,
+and the `governmentWarning.ts` dependency. Logic is pure/deterministic/I-O-free; no
+secrets, network, fs, or model calls. LCS diff verified correct (off-by-one,
+coalescing, empty inputs). Null/blank -> `missing` with a friendly message; no throws.
+
+### MAJOR — FIXED in-run
+- **`warning.ts` `detectPrefixCaps`** — the prefix regex was unanchored, so an
+  uppercase "GOVERNMENT WARNING" anywhere in the text could set `prefixCaps=true`, and
+  a compliant-but-noisy extraction (leading/trailing OCR text) would route to
+  `mismatch`. **Fix applied:** anchored to `/^government\s+warning/i` (the mandatory
+  prefix must lead the block) + added a leading-text test. The broader "should OCR
+  noise downgrade to review vs mismatch" question is logged to BACKLOG (low-risk:
+  the extractor returns an isolated `warningText`).
+
+### MINOR — FIXED in-run
+- **`warning.test.ts`** — the final fallthrough branch (reworded **and** lower-case
+  prefix -> `mismatch`, `prefixCaps:false`, with diff) was untested. **Fix applied:**
+  added that case asserting status/prefixCaps/diff/detail.
+
+### NIT (no change)
+- `GOVERNMENT_WARNING_PREFIX` is exported but unused by this slice (the check uses an
+  anchored inline regex). Harmless; could reuse later. → noted, not gold-plated.
+
+### Confirmed clean
+- Determinism/purity (no Date/random/env/fs/async); honest `FONT_NOTE` on every
+  non-missing result; type shapes match; diff cost O(n*m) on ~45 bounded tokens (well
+  within the 5s budget); clear module boundaries; no dead code in the slice.
+
 ## 2026-06-10 — M2 / T2.2 ABV conditional slice
 
 **Verdict: 1 MAJOR (fixed in-run), 3 MINOR, 2 NIT. No BLOCKER. Engine pure, no secrets.**

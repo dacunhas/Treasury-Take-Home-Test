@@ -15,3 +15,4 @@ export { compareAbv, parseAbv } from './abv';
 export type { AbvCompareOptions, ParsedAbv } from './abv';
 export { compareNetContents, parseNetContents } from './netContents';
 export type { NetContentsCompareOptions, ParsedNetContents } from './netContents';
+export { checkGovernmentWarning, diffWarningWords } from './warning';

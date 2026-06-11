@@ -5,6 +5,32 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-10 — M2/T2.4 Government Warning strict check
+
+**Overall: PASS.** Maps cleanly to CONTEXT §5 and PROJECT_PLAN §3; satisfies the §8
+lines "text matches canonical exactly; diff shown on mismatch" and "Caps-prefix and
+reworded-warning cases correctly rejected." Honest about the OCR formatting limitation.
+
+1. **Present/missing -> fail (mandatory >= 0.5% ABV) — PASS.** Empty/blank -> `missing`,
+   `present:false`, detail cites the rule. Tested for `null,'','   ','\n\t'`.
+2. **Title-case "Government Warning:" prefix correctly fails — PASS.** Anchored caps
+   detection routes title-case prefix to `mismatch`, detail "all capital letters."
+3. **Word-for-word vs canonical (whitespace-normalized) + readable diff — PASS.**
+   Canonical constant verified char-for-char vs §5; exact `===` after normalization;
+   reworded text yields a coalesced LCS word diff (removed/added/equal).
+4. **Honest bold/caps limitation surfaced — PASS.** `FONT_NOTE` on every non-missing
+   result states caps+wording are checked but true bold/font-size are not detectable.
+5. **Human-in-the-loop framing; body-casing -> review — PASS (deliberate interpretation).**
+   All words present + prefix capitalized + only body letter-casing differs -> `review`,
+   not hard fail. Recorded as an intentional, honest call (a strict-literalist could read
+   body casing as part of "word-for-word"); kept as `review`.
+6. **Acceptance matrix coverage — PASS.** exact (pass), title-case prefix (fail),
+   reworded (fail+diff), missing (fail), shrunk-but-correct (pass on text + formatting
+   note) all present, plus extra-trailing-text and leading-text edge cases.
+
+**Open items to close before submission:** none new from this slice. (Prior M1 firewall-
+seam interface item already closed by the `LabelExtractor` interface in T1.1.)
+
 ## 2026-06-10 — M2 / T2.2 ABV conditional slice
 
 **Overall: PASS.** All five criteria PASS vs CONTEXT §5 / PROJECT_PLAN §3 & §8.
