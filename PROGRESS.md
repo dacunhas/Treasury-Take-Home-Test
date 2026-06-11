@@ -4,6 +4,65 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-11 (overnight run ~1 AM ET) — M2/T2.5 Aggregate verdict
+
+**Slice built:** M2 / T2.5 — aggregate verdict. This closes the M2 comparison engine
+(T2.1–T2.5 all done); the correctness core is complete.
+
+**State on entry:** freshly-cloned `main` was several PRs ahead of the connected-folder
+planning copies (as the brief warned). Merged on `main`: M0, T1.1, T1.2, T2.1, T2.2,
+T2.3, T2.4. Built off `main`. Strict-next TODO in the repo backlog was T2.5 (T1.3 sits
+above it in file order but T2.5 is the last unbuilt M2 piece and has no unbuilt
+dependency — it combines results from the already-merged comparators).
+
+**What was built**
+- `src/lib/comparison/aggregate.ts`:
+  - `aggregateOverall(fields, warning)` — pure rollup. Worst severity wins:
+    any `fail` -> `fail`; else any `review` -> `review`; else `pass`.
+  - Status->severity: `match->pass`, `review->review`, `missing->review`
+    (an unread field flags for a human / better image, not an auto-fail — assist
+    tool, not adjudicator), `mismatch->fail`.
+  - The Government Warning is treated **strictly**: `missing` or `mismatch` -> `fail`
+    (an absent or altered mandatory warning is itself a compliance failure, CONTEXT §5),
+    only `review->review`, `match->pass`.
+  - `compareLabel(expected, extracted)` — single entry point wiring the four real
+    comparators (brand, class/type, ABV, net contents) + the warning check + rollup;
+    returns `Pick<VerificationResult,'fields'|'warning'|'overall'>`. The /api/verify
+    route (T1.3) wraps this with `latencyMs`/`escalated`.
+  - `combineAbv(extracted)` helper — joins the extractor's separate `abv` + `proof`
+    strings into one value so `compareAbv`'s `proof = 2 x ABV` cross-check can fire;
+    returns `null` when neither is present, preserving the conditional-by-beverage-type
+    omission path. `beverageType` is threaded through unchanged (no override).
+- `aggregate.test.ts` — 16 tests: rollup bands + precedence + empty-list + warning
+  strictness; integration via `compareLabel` (clean pass, brand-formatting review,
+  net-contents mismatch->fail, reworded warning->fail, spirits-no-ABV->fail,
+  beer-no-ABV not failed, proof cross-check wiring).
+- Exported both + `Overall`/`LabelComparison` types from `comparison/index.ts`.
+
+**Verification (sandbox clone):** `tsc --noEmit` clean; `next lint` clean;
+`vitest run` **171/171 passing** (16 new). Extractor not involved (pure engine; no
+live model calls).
+
+**Reviews:** code auditor = CLEAN, no BLOCKER/MAJOR (1 MINOR + 2 NIT, no action
+needed). Compliance = PASS on all 5 criteria. Self-triage: applied the one safe NIT
+(tightened the spirits-no-ABV test to assert exact `mismatch`/`fail`); re-ran green.
+
+**Open finding (carried, not new):** net-contents is not yet beverage-type aware
+(fl-oz-on-beer resolves to `review`, not `match`) — already logged as the T2.3
+carry-over; T2.5 is its natural future home since `beverageType` is in scope here.
+Conservative `review` over-flags but never wrong-passes, so it stays a PASS, logged to
+BACKLOG, not fixed in this slice (no gold-plating).
+
+**Next task:** M1 / T1.3 — `/api/verify` route. With the engine complete it is now
+unblocked and is the critical-path next slice (extractor router + `compareLabel` +
+input validation + `latencyMs`; extractor MOCKED in unit tests).
+
+**Blockers:** none.
+
+**Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-10 (overnight run) — M2/T2.4 Government Warning strict check + diff
 
 **Slice built:** M2 / T2.4 — strict Government Warning check with word-level diff. The

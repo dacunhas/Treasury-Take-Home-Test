@@ -287,3 +287,41 @@ accurate). 142/142 tests green; slice typecheck + eslint clean.
 ### Resolution status
 M1 fixed + re-tested within the run (142/142 green). M2 + MINOR/NIT carried to
 BUILD_BACKLOG "Carry-over from review."
+
+---
+
+## 2026-06-11 — M2/T2.5 Aggregate verdict slice
+
+**Verdict: CLEAN. No BLOCKER/MAJOR. 1 MINOR + 2 NIT (no action required).**
+
+Audited `src/lib/comparison/aggregate.ts` + `aggregate.test.ts` + the `index.ts`
+export, against the comparators they call. `tsc --noEmit` clean; `vitest run`
+171/171; no secrets.
+
+### Verified clean
+- **Pure/deterministic:** no I/O, no model calls, no mutation, no Date/random/global
+  state; imports are sibling comparators only. Engine stays the defensible core.
+- **Rollup correct:** `aggregateOverall` — any `fail`->fail; else any `review`->review;
+  else `pass`. Both severity switches are exhaustive over `FieldStatus`.
+- **Warning strictness:** `warningSeverity` maps `missing`/`mismatch`->fail (stricter
+  than ordinary fields), so an absent/altered mandatory warning sinks the verdict even
+  when all four fields match.
+- **`combineAbv`:** joins abv+proof so the proof cross-check fires; returns `null` when
+  neither present, preserving conditional-by-beverage-type. `beverageType` passed
+  through unchanged.
+
+### MINOR
+- **aggregate.test.ts** — the `field()` rollup-test builder hardcodes `field:'X'`; the
+  rollup tests assert on status only. Net coverage is fine (integration tests assert
+  field identity + order), so no fix required. → noted.
+
+### NIT
+- **aggregate.ts `aggregateOverall`** — builds a `severities` array then `.includes()`
+  twice (two O(n) passes + an allocation). Trivial at <=5 fields; a single reduce would
+  avoid it. Style only. → no action.
+- **aggregate.test.ts (spirits-no-ABV)** — was a loose `mismatch||missing` OR.
+  **RESOLVED in-run:** tightened to assert exact `mismatch` + overall `fail`.
+
+### Resolution
+One NIT fixed in-run (assertion tightened). Remaining MINOR/NIT are non-load-bearing
+and need no change. Slice is safe to merge.
