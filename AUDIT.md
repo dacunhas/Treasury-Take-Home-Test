@@ -5,6 +5,45 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-11 (evening) — M3/T3.1 single-label UI
+
+**Verdict: substantially clean. No BLOCKER, no MAJOR. 2 MINOR + 3 NIT.**
+
+Audited the slice diff vs `main`: `src/components/VerifyForm.tsx` (new),
+`src/lib/ui/format.ts` (new), `src/lib/ui/format.test.ts` (new), `src/app/page.tsx`
+(rewritten). Verdict comes only from the server engine (UI calls pure presentation
+helpers). Diff legend matches `warning.ts` LCS semantics exactly (removed = in
+canonical/required, missing from label -> line-through; added = on label, not in
+canonical -> underline). No secrets; client sends only multipart to `/api/verify`;
+stateless (no localStorage). No perf trap vs the 5s budget (all UI work is
+post-response). React keys stable (`f.field`, `o.value`). a11y basics present
+(labels tied via htmlFor/id, aria-live/role=alert/role=status/aria-busy, glyphs
+aria-hidden with text alongside) — full a11y pass correctly deferred to T3.3.
+
+### MINOR — FIXED in-run
+- **`VerifyForm.tsx` fetch handler** — a non-JSON response body (upstream gateway
+  HTML error page) was caught by the outer `catch` and surfaced the misleading
+  "could not reach the service" (network) message. Crash-safe already, but
+  mislabeled. **Fix applied:** `res.json()` wrapped in its own try/catch; an
+  unparseable body now shows "unexpected response (HTTP n)."
+- **`VerifyForm.tsx`** — dead `formRef`/`useRef` (submission uses `e.currentTarget`).
+  **Fix applied:** removed the ref + the `useRef` import.
+
+### NIT
+- Image-picker helper text hardcoded "(PNG, JPEG, or WebP)" while the accept list /
+  server also allow HEIC/HEIF. **Fixed in-run** (made the helper text generic).
+- Diff segments use `key={i}` (array index) — safe: the list is render-only and never
+  reordered. No change.
+- `bg`/`fg` color tokens are AA-contrast and presentation-only; status is always
+  glyph + word too. No change.
+
+### Confirmed clean
+- Result rendering matches `VerificationResult` (`fields[]`, `warning{status,diff,
+  detail}`, `overall`, `latencyMs`, `escalated`); `found ?? '—'` / `expected || '—'`
+  handle null/empty; presentation fallbacks guard unexpected enum values.
+
+---
+
 ## 2026-06-10 — M2/T2.4 Government Warning strict check
 
 **Verdict: substantially clean. No BLOCKER. 1 MAJOR + 1 MINOR — both fixed in-run.**

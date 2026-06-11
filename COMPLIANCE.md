@@ -5,6 +5,43 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-11 (evening) — M3/T3.1 single-label UI
+
+**Overall: PASS.** Maps to CONTEXT §1/§2/§5 and PROJECT_PLAN §4/§8. No spec
+contradiction. The only open item (live-browser E2E against a real sample label) is a
+human/T3.4 step and is DEFERRED, not a failure.
+
+1. **All five inputs + image picker — PASS.** Brand, class/type, beverage-type
+   `<select>` (Spirits/Wine/Beer), alcohol content, net contents, label-image file
+   input. Field `name`s exactly match `parseVerifyForm` reads.
+2. **Results card — PASS.** Overall banner (glyph + plain word + summary + latency);
+   per-field table (Field / Expected / Found / Status with semantic `<th scope>`);
+   Government Warning section with the word-level diff + plain-language legend. Diff
+   segment shape matches `WarningDiffSegment`.
+3. **Latency + escalation surfaced — PASS.** `formatVerifiedLine` shows "Verified in
+   N.Ns" and "(a closer check was run)" on escalation; in-flight "running a closer
+   check…" copy present; bad/negative/NaN latency floored to 0.0.
+4. **"73-year-old benchmark" accessibility (basic) — PASS.** Labels tied to inputs;
+   status conveyed by word + glyph (never color alone); large targets/fonts; plain
+   wording ("Looks good" / "Please check" / "Doesn't match"); aria-live results,
+   role=alert errors, aria-busy submit. Deeper sweep = T3.3 (DEFERRED).
+5. **Agent-assist framing — PASS.** "flags discrepancies for a human reviewer; does
+   not make compliance decisions" (page.tsx).
+6. **Stateless / no-PII — PASS.** No localStorage/sessionStorage/cookies; React-only
+   state cleared per submit; image sent in-request only.
+7. **ABV optional-by-beverage-type — PASS.** No `required` on any input (`noValidate`);
+   ABV labeled "(optional for beer and table wine)"; handler omits abv from required
+   set — matches CONTEXT §5 (the most error-prone rule, handled correctly).
+8. **End-to-end browser run vs a real sample label — DEFERRED.** Not exercisable in an
+   unattended sandbox (no live model/keys); validating a real sample label is the T3.4
+   step. Wiring verified consistent component <-> route <-> handler <-> types.
+
+**Open items to close before submission:** none new. ("dropzone" shipped as a file
+picker — cosmetic; deeper error UX T3.2, full a11y T3.3, sample labels T3.4, README
+T5.1 all remain on the backlog.)
+
+---
+
 ## 2026-06-10 — M2/T2.4 Government Warning strict check
 
 **Overall: PASS.** Maps cleanly to CONTEXT §5 and PROJECT_PLAN §3; satisfies the §8
