@@ -29,8 +29,20 @@ export const SUPPORTED_MIME_TYPES = [
  * sunset can be handled by a config change + redeploy — no code change needed.
  */
 const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash';
-/** Upper bound on the Flash call so a hung connection cannot blow the 5s SLA. */
-const DEFAULT_TIMEOUT_MS = 4000;
+/**
+ * Upper bound on the Flash call so a hung connection cannot block indefinitely.
+ * A 4s cap was too tight for real full-resolution label photos (lots of fine
+ * print → the vision read legitimately takes ~4–6s and was being aborted just
+ * before completing, surfacing as a false "couldn't read the label" timeout).
+ * Raised to 9s for headroom; the platform function limit is far higher. The
+ * common path still typically returns in ~2–4s; this only prevents premature
+ * aborts on heavier images. Overridable via `GEMINI_TIMEOUT_MS`.
+ */
+function parseTimeoutEnv(): number {
+  const raw = Number(process.env.GEMINI_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 9000;
+}
+const DEFAULT_TIMEOUT_MS = parseTimeoutEnv();
 const DEFAULT_ENDPOINT_BASE =
   'https://generativelanguage.googleapis.com/v1beta/models';
 
