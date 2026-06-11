@@ -15,13 +15,19 @@
  * image is sent for the request only. Friendly errors are shown inline (the API
  * already returns human-readable messages, never a stack trace).
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { BeverageType, VerificationResult } from '@/types';
 import {
   fieldStatusPresentation,
   formatVerifiedLine,
   overallPresentation,
 } from '@/lib/ui/format';
+import { validateVerifyForm } from '@/lib/ui/validateForm';
+import {
+  ACCEPT_ATTR,
+  ACCEPTED_TYPES_LABEL,
+  MAX_IMAGE_LABEL,
+} from '@/lib/ui/imageConstraints';
 
 const SAMPLE = {
   brand: 'OLD TOM DISTILLERY',
@@ -61,14 +67,37 @@ export default function VerifyForm() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
+  const brandRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setResult(null);
+
+    // Preflight: catch empty form / missing-or-bad image before the network
+    // round-trip so the agent gets an instant, friendly message (T3.2). The API
+    // re-validates independently; this is a UX fast-path, not the boundary.
+    const formData = new FormData(e.currentTarget);
+    const file = formData.get('image');
+    const image =
+      file instanceof File ? { type: file.type, size: file.size } : null;
+    const validation = validateVerifyForm({
+      brand: String(formData.get('brand') ?? ''),
+      classType: String(formData.get('classType') ?? ''),
+      abv: String(formData.get('abv') ?? ''),
+      netContents: String(formData.get('netContents') ?? ''),
+      image,
+    });
+    if (!validation.ok) {
+      setError(validation.message);
+      const target = validation.focus === 'image' ? imageRef : brandRef;
+      target.current?.focus();
+      return;
+    }
+
     setSubmitState('verifying');
     try {
-      const formData = new FormData(e.currentTarget);
       const res = await fetch('/api/verify', {
         method: 'POST',
         body: formData,
@@ -129,6 +158,7 @@ export default function VerifyForm() {
               id="brand"
               name="brand"
               type="text"
+              ref={brandRef}
               style={input}
               placeholder={SAMPLE.brand}
               autoComplete="off"
@@ -209,16 +239,21 @@ export default function VerifyForm() {
               id="image"
               name="image"
               type="file"
-              accept="image/png,image/jpeg,image/webp,image/heic,image/heif"
+              ref={imageRef}
+              accept={ACCEPT_ATTR}
+              aria-describedby="image-help"
               style={{ ...input, padding: '0.55rem 0.75rem' }}
               onChange={(e) =>
                 setImageName(e.target.files?.[0]?.name ?? null)
               }
             />
-            <p style={{ margin: '0.4rem 0 0', color: '#555', fontSize: '0.9rem' }}>
+            <p
+              id="image-help"
+              style={{ margin: '0.4rem 0 0', color: '#555', fontSize: '0.9rem' }}
+            >
               {imageName
                 ? `Selected: ${imageName}`
-                : 'Upload a clear photo or scan of the label.'}
+                : `Upload a clear photo or scan of the label (${ACCEPTED_TYPES_LABEL}, up to ${MAX_IMAGE_LABEL}). If the read comes back unclear, try a sharper, straight-on image.`}
             </p>
           </div>
 

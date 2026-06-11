@@ -4,6 +4,56 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-11 (overnight run) — M3 / T3.2 error handling
+
+**Slice built:** T3.2 — single-label error handling / preflight validation. Strict-next
+TODO after T3.1 merged (PR #9). Freshly-cloned `main` was AHEAD of the connected-folder
+planning copies (they still showed T3.1 TODO); trusted `main` per AGENTS.md and built
+off it. No open BLOCKER / FAIL on entry.
+
+**What was built**
+- `src/lib/ui/imageConstraints.ts` (new) — client-safe single source of truth for
+  `MAX_IMAGE_BYTES` (10 MB), the accepted image MIME set, `ACCEPT_ATTR`, and the
+  human-readable `MAX_IMAGE_LABEL` / `ACCEPTED_TYPES_LABEL`. Imports nothing (no SDK /
+  `process.env`), so it is safe in the client bundle. `handler.ts` now imports + re-exports
+  `MAX_IMAGE_BYTES` (and uses `MAX_IMAGE_LABEL` in its oversize message) so the API and the
+  client preflight enforce an identical limit with no drift.
+- `src/lib/ui/validateForm.ts` (new) — pure, framework-free preflight (`validateVerifyForm`):
+  empty form (no expected value), missing/zero-byte image, unsupported type (case-insensitive),
+  oversize (`> MAX`, so `== MAX` passes). Returns the FIRST friendly problem + which control to
+  focus. Mirrors the route's wording.
+- `src/components/VerifyForm.tsx` — runs the preflight before the fetch; on failure shows the
+  message and moves keyboard focus to the offending control (new `brandRef` / `imageRef`); the
+  file input gains `aria-describedby` help text naming accepted types + size limit and nudging
+  a sharper image. Existing post-submit paths untouched: `data.error` surfacing (the API's
+  "request a better image" ExtractionError body), non-JSON gateway guard, network-failure catch.
+  Partial extraction still renders `missing` rows via `format.ts`.
+- `src/lib/ui/validateForm.test.ts` (new) — 12 unit tests incl. inclusive size boundary,
+  zero-byte=missing, whitespace-only expected=empty, case-insensitive MIME, ordering, and a
+  drift guard asserting the client MIME list == extractor `SUPPORTED_MIME_TYPES`.
+
+**Validation:** 203/203 tests green (was 191; +12). `tsc --noEmit`, `next lint`, and
+`next build` all clean (route `/` = 3.7 kB First Load, validator stays client-safe).
+Extractor remains MOCKED — no live Gemini/Anthropic call this run.
+
+**Reviews:** AUDIT = PASS (no BLOCKER/MAJOR/MINOR; 2 NITs logged to BACKLOG, not gold-plated).
+COMPLIANCE = PASS (9/9 criteria; T3.3 full-a11y + T3.4 sample-labels correctly deferred).
+
+**In-run self-fix:** swapped the handler's hard-coded "10 MB" oversize string to derive from
+`MAX_IMAGE_LABEL` (compliance NIT b) — re-tested green.
+
+**Decisions / notes:** kept the validator pure + node-testable (no jsdom/testing-library added),
+matching the established `format.ts` pattern. Preflight is a UX fast-path; the server route still
+re-validates independently (defense in depth).
+
+**Next TODO:** T3.3 — accessibility pass (semantic HTML already strong; needs keyboard-flow +
+AA-contrast + automated a11y check), then T3.4 sample labels. Critical path to Mon 6/15: T3.3,
+T3.4, then M5 (README/approach doc, latency check, deploy).
+
+**Blockers:** none.
+
+---
+
 ## 2026-06-11 (evening run) — M3 / T3.1 single-label UI
 
 **Slice built:** T3.1 — single-label verification screen. Strict-next TODO after

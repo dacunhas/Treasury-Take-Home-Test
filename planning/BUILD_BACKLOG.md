@@ -175,10 +175,23 @@ Grouped by the PROJECT_PLAN §7 milestones.
   copy drift). Deeper error UX = T3.2; full a11y sweep = T3.3; sample-label browser
   E2E = T3.4 — all left to their own slices (not gold-plated).
 
-### T3.2 — Error handling  [TODO]
+### T3.2 — Error handling  [DONE 2026-06-11]
 - Wrong type/oversize; empty form/image; model/network failure; unreadable image →
   "request a better image"; partial extraction → mark fields `missing`.
 - **Accept:** each path shows a friendly message; no crash/stack trace.
+- Done: `src/lib/ui/imageConstraints.ts` (new, client-safe single source for
+  `MAX_IMAGE_BYTES` + accepted MIME set + labels; `handler.ts` now imports/re-exports
+  the limit so client + server can't drift) + `src/lib/ui/validateForm.ts` (new, pure
+  preflight: empty-form, missing/zero-byte image, unsupported type, oversize — returns
+  the first friendly problem + which control to focus). `VerifyForm.tsx` runs the
+  preflight before the network round-trip and moves focus to the offending control
+  (brand/image refs); existing post-submit paths preserved — `data.error` surfacing
+  ("request a better image" from the API `ExtractionError`), non-JSON gateway guard,
+  network-failure catch. Partial extraction still renders `missing` rows via `format.ts`
+  (unchanged). 12 new unit tests incl. an inclusive size boundary + a drift guard
+  (client MIME list == extractor `SUPPORTED_MIME_TYPES`). 203/203 green; tsc + lint +
+  `next build` clean. Reviews: AUDIT PASS (no BLOCKER/MAJOR/MINOR), COMPLIANCE PASS
+  (9/9). Full a11y sweep = T3.3; sample-label browser E2E = T3.4 (not gold-plated).
 
 ### T3.3 — Accessibility pass  [TODO]
 - Semantic HTML, labels tied to inputs, keyboard flow, focus states, AA contrast,
@@ -254,5 +267,13 @@ Grouped by the PROJECT_PLAN §7 milestones.
   stated in fl oz stays a flag. Conservative `review` ships now; the full conditional
   belongs with the aggregate verdict (mirror `abv.ts`). (T2.3 AUDIT MAJOR M2;
   compliance ruled the conservative default a PASS, not a FAIL.)
+- [M3/T3.2 NIT] The client preflight MIME list (drift-guarded against the GEMINI
+  `SUPPORTED_MIME_TYPES`) differs from `SONNET_SUPPORTED_MIME_TYPES` (Sonnet adds
+  `image/gif`, omits `heic`/`heif`). Harmless today (Gemini is the documented
+  primary/authority and the form mirrors it); revisit only if provider routing ever
+  becomes user-selectable. (T3.2 AUDIT NIT.)
+- [M3/T3.2 NIT] An image with an empty `type` (browser couldn't infer a MIME) falls
+  into the "type not supported" preflight branch rather than a presence message;
+  acceptable UX, flagged for completeness. (T3.2 AUDIT NIT.)
 - [M2 NIT] Net-contents `gal` factor is 3785.41 vs 3785.411784 (~5e-7 relative,
   harmless under the 1% tolerance); tighten only if tolerance is ever reduced.

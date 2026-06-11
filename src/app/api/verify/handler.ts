@@ -21,9 +21,14 @@ import {
   type RoutedExtraction,
 } from '@/lib/extractor';
 import { compareLabel } from '@/lib/comparison';
+import { MAX_IMAGE_BYTES, MAX_IMAGE_LABEL } from '@/lib/ui/imageConstraints';
 
-/** Reject images larger than this to protect memory + the 5s budget. */
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
+/**
+ * Reject images larger than this to protect memory + the 5s budget.
+ * Re-exported from the shared client/server source of truth (T3.2) so the API
+ * and the form preflight enforce the identical limit.
+ */
+export { MAX_IMAGE_BYTES };
 
 const BEVERAGE_TYPES: readonly BeverageType[] = ['spirits', 'wine', 'beer'];
 
@@ -140,7 +145,7 @@ export async function parseVerifyForm(
   }
   if (imageValue.size > MAX_IMAGE_BYTES) {
     throw new VerifyValidationError(
-      'That image is too large. Please upload an image under 10 MB.',
+      `That image is too large. Please upload an image under ${MAX_IMAGE_LABEL}.`,
     );
   }
 

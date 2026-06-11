@@ -405,3 +405,39 @@ no network).
 ### Cross-cutting (NOT this slice — for Steve)
 - `next@14.2.5` has a published security advisory (install deprecation warning). Repo-wide
   dependency hygiene; recommend a small standalone "bump Next" PR before submission.
+
+---
+
+## 2026-06-11 (overnight) — M3 / T3.2 error handling / preflight validation
+
+**Verdict: PASS — clean slice. No BLOCKER/MAJOR/MINOR. 2 NITs (logged to BACKLOG, no action).**
+
+Audited the diff: `src/lib/ui/imageConstraints.ts` (new), `src/lib/ui/validateForm.ts`
+(new), `src/lib/ui/validateForm.test.ts` (new, 12 tests), `src/components/VerifyForm.tsx`
+(wiring), `src/app/api/verify/handler.ts` (single-source import). 203/203 green; tsc + lint
++ `next build` clean.
+
+### Verified clean (no findings)
+- **No secrets / no leaks:** no `console`/`process.env`/key refs in new code (only a doc
+  comment in `imageConstraints.ts` explaining the module deliberately avoids them).
+- **Client-safety:** `imageConstraints.ts` has ZERO imports (pure constants/functions);
+  `validateForm.ts` imports only from it. No transitive path to provider SDK/config — safe
+  in the client bundle (confirmed: `/` First Load 3.7 kB).
+- **Single source of truth:** `MAX_IMAGE_BYTES` (10 MB, unchanged) now lives only in
+  `imageConstraints.ts`; `handler.ts` imports + re-exports it (so `handler.test.ts` still
+  resolves it) and uses `MAX_IMAGE_LABEL` in its message. Drift-guard test pins the client
+  MIME list to the extractor's `SUPPORTED_MIME_TYPES`.
+- **Validator correctness:** order expected→presence→type→size; inclusive size boundary
+  (`> MAX`); zero-byte = missing; case-insensitive MIME; whitespace-only expected = empty.
+- **VerifyForm wiring:** exactly one `new FormData` (inner duplicate removed); fetch body
+  unchanged; refs + focus routing correct; preflight returns before `verifying` state, so the
+  success path is unregressed.
+- **Errors / perf:** friendly strings only, no stack traces, wording matches the server; pure
+  synchronous checks pre-network — no 5s-budget concern.
+
+### NIT (logged to BACKLOG, no action this slice)
+- Client MIME list is drift-guarded against GEMINI's set only; SONNET's set differs
+  (`image/gif` vs `heic`/`heif`). Harmless while Gemini is the documented primary; revisit if
+  provider routing becomes user-selectable.
+- An empty `image.type` falls into the "type not supported" branch rather than a presence
+  message. Acceptable UX.
