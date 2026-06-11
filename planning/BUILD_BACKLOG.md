@@ -155,11 +155,25 @@ Grouped by the PROJECT_PLAN §7 milestones.
 
 ## M3 — Single-label UI + errors + accessibility (Fri 6/12)
 
-### T3.1 — Single-label screen  [TODO]
+### T3.1 — Single-label screen  [DONE 2026-06-11]
 - Form (brand, class/type, ABV, net contents, beverage-type selector) + image
   dropzone; results card (overall banner + per-field rows + warning diff);
   "Verified in N.Ns" latency display + "running a closer check…" on escalation.
 - **Accept:** end-to-end verify works in the browser against a real sample label.
+- Done: `src/components/VerifyForm.tsx` (client) + `src/app/page.tsx` shell +
+  pure `src/lib/ui/format.ts` presentation helpers (testable under the node vitest
+  env — no DOM dep added). Form posts multipart to `/api/verify` (field names match
+  `parseVerifyForm`); ABV is NOT hard-required (CONTEXT §5 conditional rule). Results
+  card = overall banner (icon+word+summary), per-field table (expected vs found +
+  status), Government Warning section with the word-level diff + plain-language
+  legend, and the "Verified in N.Ns" latency line ("(a closer check was run)" on
+  escalation; in-flight "running a closer check…" copy). Status conveyed by glyph +
+  word, never color alone; labels tied to inputs; `aria-live`/`role=alert`/`aria-busy`.
+  8 new pure unit tests (format.ts); 191/191 total green; tsc + next lint + next build
+  all clean. Reviews: auditor no BLOCKER/MAJOR; compliance PASS. 3 in-run fixes
+  (dead ref removed, non-JSON-body response now shows an HTTP-status message, HEIC
+  copy drift). Deeper error UX = T3.2; full a11y sweep = T3.3; sample-label browser
+  E2E = T3.4 — all left to their own slices (not gold-plated).
 
 ### T3.2 — Error handling  [TODO]
 - Wrong type/oversize; empty form/image; model/network failure; unreadable image →

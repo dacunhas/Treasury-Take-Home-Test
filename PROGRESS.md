@@ -4,6 +4,73 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-11 (evening run) — M3 / T3.1 single-label UI
+
+**Slice built:** T3.1 — single-label verification screen. Strict-next TODO after
+T1.3 (`/api/verify`) merged; the route + comparison engine it consumes are on
+`main`, so this is the next critical-path slice (the first user-facing screen).
+
+**State on entry:** freshly-cloned `main` (PR #8 merged) matched the connected-folder
+planning copies — M0, M1 (T1.1–T1.3), M2 (T2.1–T2.5) all merged. No open BLOCKER /
+FAIL. Built off `main`.
+
+**What was built**
+- `src/lib/ui/format.ts` — pure, I/O-free presentation helpers (overall + field
+  status -> plain-language label + non-color text glyph; `formatLatencySeconds` /
+  `formatVerifiedLine` with NaN/negative flooring; fallback-to-`review` guards for
+  unexpected enum values). Kept framework-free so it unit-tests under the existing
+  `node` vitest env — no DOM/testing-library dependency added.
+- `src/lib/ui/format.test.ts` — 8 tests (latency formatting incl. clock-skew/NaN,
+  verified-line escalation note, presentation coverage + fallbacks).
+- `src/components/VerifyForm.tsx` — `'use client'` form (brand, class/type,
+  beverage-type `<select>`, ABV [labeled optional for beer/table wine], net
+  contents, label-image picker) that POSTs multipart to `/api/verify` (field names
+  match `parseVerifyForm`). Renders the `VerificationResult`: overall banner
+  (glyph+word+summary+latency), per-field table (expected vs found + status +
+  detail), Government Warning section with the word-level diff and a plain-language
+  legend. In-flight "running a closer check…" copy; "(a closer check was run)" on
+  `escalated`. Stateless — no localStorage/persistence; image sent for the request
+  only. Friendly inline errors (the API already returns human-readable messages).
+- `src/app/page.tsx` — server shell: heading + agent-assist framing ("flags for a
+  human reviewer; does not make compliance decisions") + `<VerifyForm/>`.
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `next lint` clean;
+`next build` succeeds (/ route 3.07 kB, route compiled); `vitest run` **191/191
+passing** (8 new). No live API calls (UI work is all post-response; engine + route
+already mocked-tested).
+
+**Reviews:** code auditor = **no BLOCKER/MAJOR** (2 MINOR + 3 NIT). Compliance =
+**PASS** on all in-scope T3.1 criteria; live-browser E2E against a real sample label
+recorded DEFERRED (a human/T3.4 step — no API keys in an unattended run; wiring
+verified consistent across component <-> route <-> handler <-> types).
+
+**Self-triage (fixed in-run, all safe / no spec decision):**
+- Removed a dead `formRef`/`useRef` (submission uses `e.currentTarget`).
+- Non-JSON response body (e.g. an upstream gateway HTML error page) now shows a
+  clear "unexpected response (HTTP n)" message instead of the misleading network
+  error (still crash-safe before; just better copy).
+- Fixed HEIC/HEIF copy drift in the image-picker helper text (made generic).
+Re-ran tsc + lint + build + tests after the fixes — all green.
+
+**Logged for later (not gold-plated this slice):**
+- Drag-and-drop dropzone (spec says "dropzone"; shipped a standard file picker —
+  functionally equivalent) — fold into T3.2/T3.3 if time allows.
+- Deeper client error UX (retry affordance, oversize/type pre-check before upload)
+  -> T3.2. Full a11y sweep (keyboard focus states, measured AA contrast,
+  screen-reader pass) -> T3.3. Sample-label browser E2E -> T3.4.
+
+**Open finding for Steve (pre-existing, repo-wide — NOT this slice):** `next@14.2.5`
+security advisory still outstanding (npm deprecation warning on install). Best done as
+its own small dependency-bump PR before deploy (M5). Not a T3.1 blocker.
+
+**Next task:** M3 / T3.2 — error handling (wrong type/oversize, empty form/image,
+model/network failure, unreadable image -> "request a better image", partial
+extraction -> fields `missing`).
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE (PR opened against main).**
+
+---
+
 ## 2026-06-11 (evening run) — M1 / T1.3 `/api/verify` route
 
 **Slice built:** T1.3 — single-label verification API route. This was the strict-next
