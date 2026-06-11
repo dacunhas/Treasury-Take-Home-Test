@@ -325,3 +325,44 @@ export, against the comparators they call. `tsc --noEmit` clean; `vitest run`
 ### Resolution
 One NIT fixed in-run (assertion tightened). Remaining MINOR/NIT are non-load-bearing
 and need no change. Slice is safe to merge.
+
+---
+
+## 2026-06-11 — M1 / T1.3 `/api/verify` route
+
+**Verdict: No BLOCKER/MAJOR. Slice is clean. 1 MINOR (fixed in-run) + 2 NITs.**
+
+Audited: `src/app/api/verify/{handler,route,handler.test}.ts` against the contracts in
+`src/lib/extractor/*` and `src/lib/comparison/aggregate.ts`. Tests 183/183; typecheck +
+lint clean. Extractor is properly MOCKED in tests (in-memory fake; no provider import,
+no network).
+
+### Verified clean (no findings)
+- **No secrets / no logging of env:** no `console`/`process.env`/key references in the
+  three files; `MissingConfigError` → generic 503 that does not leak the env-var name.
+- **Error paths:** every branch returns `NextResponse.json({error})` — 400 validation,
+  400 non-multipart, 503 missing-key, 502 ExtractionError (input vs transient), 500
+  unknown, 405 non-POST. No stack trace reaches the client (PROJECT_PLAN §5).
+- **Statelessness:** image read into a Buffer for the request only, base64-encoded,
+  handed to the extractor, never written to disk/DB. Test-asserted passthrough.
+- **Input validation:** presence + Blob/type + MIME allow-list + 10 MB cap (checked
+  before `arrayBuffer()`, so no oversized buffer is materialized) + empty-decode guard;
+  beverage-type enum (case-insensitive); ABV left to the engine.
+- **Perf vs 5s:** size cap before buffering; extractor cached on warm instances; deep
+  tier only on low confidence (router). No obvious trap.
+
+### MINOR (RESOLVED 2026-06-11 in-run)
+- `handler.ts` — MIME error message said "PNG, JPEG, or WebP" while `SUPPORTED_MIME_TYPES`
+  also accepts HEIC/HEIF (message could mislead). **Fix applied:** `SUPPORTED_TYPES_LABEL`
+  is now derived from `SUPPORTED_MIME_TYPES`, so user-facing strings can't drift from the
+  accepted set. Re-tested green.
+
+### NIT (no action — logged for awareness)
+- `handler.ts` — the post-required-fields `imageValue instanceof Blob` re-check is
+  slightly redundant with the earlier `hasImage` computation. Correct/defensive; kept.
+- `handler.ts` — `imageBytes` on `ParsedVerifyRequest` is diagnostic-only and unused by
+  `runVerification` (exercised by a test). Kept for testability/future logging.
+
+### Cross-cutting (NOT this slice — for Steve)
+- `next@14.2.5` has a published security advisory (install deprecation warning). Repo-wide
+  dependency hygiene; recommend a small standalone "bump Next" PR before submission.

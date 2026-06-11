@@ -77,11 +77,19 @@ Grouped by the PROJECT_PLAN §7 milestones.
   overridable. 21 new mocked unit tests (13 sonnet + 8 router; transport/extractors
   injected — no live Anthropic/Gemini). 54/54 total green; `tsc`/`next lint` clean.
 
-### T1.3 — `/api/verify` route (single)  [TODO]
+### T1.3 — `/api/verify` route (single)  [DONE 2026-06-11]
 - Accept multipart (expected values + beverage type + image). Validate input.
   Call extractor → comparison engine → return `VerificationResult` with `latencyMs`.
 - **Accept:** happy path returns structured result; bad input returns 4xx + message,
   never a stack trace.
+- Done: `src/app/api/verify/{route,handler,handler.test}.ts`. Pure `handler.ts`
+  (parseVerifyForm + runVerification) is unit-tested with a MOCKED extractor (12
+  tests); thin `route.ts` POST adapter wires `RoutingExtractor(Gemini, Sonnet)` and
+  maps errors → friendly JSON (400 validation / 502 ExtractionError / 503 missing-key
+  / 500 unknown / 405 non-POST), never a stack trace. Measures `latencyMs`, propagates
+  `escalated` from the router, blank-ABV passthrough preserves §5 conditional rules,
+  10 MB size cap, MIME allow-list, stateless (image in-memory only). tsc + lint clean;
+  183/183 tests green.
 
 ---
 
