@@ -5,6 +5,43 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-12 — M3/T3.3 Accessibility pass
+
+**Verdict: No BLOCKER/MAJOR. Slice is correct, secure, well-scoped. 3 NIT (2 fixed in-run).**
+
+Audited the full diff: `globals.css`, `layout.tsx`, `page.tsx`, `VerifyForm.tsx`,
+`colors.ts`, `contrast.ts`, `contrast.test.ts`, `VerifyForm.a11y.test.tsx`,
+`.eslintrc.json`, `vitest.config.ts`, `package.json`. `tsc --noEmit` clean; `vitest run`
+226/226 (incl. 13 contrast + 2 axe). Secret scan across the diff + new files → none.
+
+### Verified clean (no findings)
+- **No secrets/keys** committed anywhere; new devDeps (`jsdom`, `axe-core`, explicit
+  `eslint-plugin-jsx-a11y`) are dev-only (absent from runtime `dependencies`).
+- **Contrast math correct** — `relativeLuminance`/`contrastRatio` follow WCAG 2.1 exactly
+  (0.03928 threshold, 2.4 gamma, correct coefficients, `(L+0.05)` ratio). Black/white
+  asserts `toBeCloseTo(21,1)`; the `#777` boundary test confirms the AA threshold logic.
+- **Focus `useEffect` — no loop:** the two effects depend only on `[error, errorOrigin]`
+  and `[result]`, call `.focus()` only (no state writes) — no re-render cycle.
+- **Exported `ResultCard`:** local→export with a required `sectionRef`; the in-file caller
+  passes `resultRef`, the a11y test passes `createRef()`. No broken call sites; types check.
+- **a11y test genuinely asserts** — mounts real markup in jsdom, runs `axe.run`, asserts
+  `violations.toEqual([])`; `color-contrast` correctly disabled under jsdom (no layout) and
+  back-filled by `contrast.test.ts`. Not a no-op.
+- **5s budget:** pure client UI/CSS; no new network/server work. Unaffected.
+
+### NIT
+- `globals.css` `.skip-link` hardcoded `#0b3d91` instead of the `--focus-ring` var.
+  **FIXED in-run** (now `var(--focus-ring)`).
+- `eslint-plugin-jsx-a11y` resolved only transitively via `next/core-web-vitals` — a future
+  Next bump could drop it silently. **FIXED in-run** (pinned as an explicit `^6.10.2`
+  devDep). [compliance also flagged this]
+- Word-diff spans use `key={i}` over a static, append-only array — acceptable for this
+  static render; switch to a stable key only if diffs are ever animated. No action.
+
+### Resolution
+2 of 3 NITs fixed + re-tested in-run (lint + 226/226 green); the last is non-actionable.
+Slice is safe to merge.
+
 ## 2026-06-11 (evening) — M3/T3.1 single-label UI
 
 **Verdict: substantially clean. No BLOCKER, no MAJOR. 2 MINOR + 3 NIT.**

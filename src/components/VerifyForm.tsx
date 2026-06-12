@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * T3.1 — Single-label verification screen.
+ * T3.1 — Single-label verification screen. T3.2 — friendly error handling.
+ * T3.3 — accessibility pass.
  *
  * A simple, accessible form (brand, class/type, ABV, net contents, beverage-type
  * selector) + a label-image picker that POSTs multipart/form-data to /api/verify
@@ -9,19 +10,24 @@
  * rows (expected vs found), the Government Warning section with a word-level
  * diff, and the measured "Verified in N.Ns" latency (CONTEXT §1, PROJECT_PLAN §4).
  *
- * Design bar: usable by a non-technical agent ("73-year-old benchmark") — large
- * targets, labels tied to inputs, status conveyed by word + glyph (not color
- * alone), aria-live result announcements. Stateless: nothing is persisted; the
- * image is sent for the request only. Friendly errors are shown inline (the API
- * already returns human-readable messages, never a stack trace).
+ * Accessibility bar — usable by a non-technical agent ("73-year-old benchmark"):
+ *   - every control has a <label htmlFor> tie; the group has a <legend>;
+ *   - status is conveyed by a WORD + a text glyph, never colour alone;
+ *   - all colours clear WCAG AA (guarded by contrast.test.ts);
+ *   - a visible, consistent keyboard focus ring (globals.css);
+ *   - focus is moved to the result on success and to the error on a submit
+ *     failure, and to the offending field on a fixable validation error;
+ *   - the result and error regions are aria-live so screen readers announce them.
+ * Stateless: nothing is persisted; the image is sent for the request only.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BeverageType, VerificationResult } from '@/types';
 import {
   fieldStatusPresentation,
   formatVerifiedLine,
   overallPresentation,
 } from '@/lib/ui/format';
+import { COLORS } from '@/lib/ui/colors';
 import { validateVerifyForm } from '@/lib/ui/validateForm';
 import { downscaleImageFile } from '@/lib/ui/imageResize';
 import {
@@ -44,6 +50,8 @@ const BEVERAGE_OPTIONS: { value: BeverageType; label: string }[] = [
 ];
 
 type SubmitState = 'idle' | 'verifying';
+/** Where an error came from, so focus goes to the right place (T3.3). */
+type ErrorOrigin = 'field' | 'submit';
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -56,24 +64,45 @@ const input: React.CSSProperties = {
   boxSizing: 'border-box',
   padding: '0.7rem 0.75rem',
   fontSize: '1rem',
-  border: '1px solid #6b6b6b',
+  border: `1px solid ${COLORS.inputBorder}`,
   borderRadius: 6,
-  background: '#fff',
+  background: COLORS.white,
+  color: COLORS.text,
 };
 const fieldWrap: React.CSSProperties = { marginBottom: '1.1rem' };
+const hintText: React.CSSProperties = {
+  margin: '0.4rem 0 0',
+  color: COLORS.muted,
+  fontSize: '0.9rem',
+};
 
 export default function VerifyForm() {
   const [beverageType, setBeverageType] = useState<BeverageType>('spirits');
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [errorOrigin, setErrorOrigin] = useState<ErrorOrigin | null>(null);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const brandRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLElement>(null);
+
+  // Move focus where the user needs it after a render (T3.3):
+  //  - a submit-time error (network/API): focus the alert so it is found;
+  //  - a successful result: focus the result region so it is announced/reachable.
+  // Fixable validation errors focus the offending field directly (see submit).
+  useEffect(() => {
+    if (error && errorOrigin === 'submit') errorRef.current?.focus();
+  }, [error, errorOrigin]);
+  useEffect(() => {
+    if (result) resultRef.current?.focus();
+  }, [result]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setErrorOrigin(null);
     setResult(null);
 
     // Preflight: catch empty form / missing-or-bad image before the network
@@ -92,6 +121,9 @@ export default function VerifyForm() {
     });
     if (!validation.ok) {
       setError(validation.message);
+      setErrorOrigin('field');
+      // A fixable input problem: focus the control to fix (role=alert still
+      // announces the message to screen-reader users).
       const target = validation.focus === 'image' ? imageRef : brandRef;
       target.current?.focus();
       return;
@@ -122,6 +154,7 @@ export default function VerifyForm() {
         setError(
           `The server returned an unexpected response (HTTP ${res.status}). Please try again in a moment.`,
         );
+        setErrorOrigin('submit');
         return;
       }
       if (!res.ok || data === null || 'error' in data) {
@@ -130,6 +163,7 @@ export default function VerifyForm() {
             ? data.error
             : 'Something went wrong verifying the label. Please try again.',
         );
+        setErrorOrigin('submit');
         return;
       }
       setResult(data);
@@ -137,6 +171,7 @@ export default function VerifyForm() {
       setError(
         'We could not reach the verification service. Please check your connection and try again.',
       );
+      setErrorOrigin('submit');
     } finally {
       setSubmitState('idle');
     }
@@ -146,9 +181,9 @@ export default function VerifyForm() {
 
   return (
     <div style={{ display: 'grid', gap: '2rem' }}>
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate aria-label="Verify a single label">
         <fieldset
-          style={{ border: 'none', margin: 0, padding: 0 }}
+          style={{ border: 'none', margin: 0, padding: 0, minInlineSize: 'auto' }}
           disabled={verifying}
         >
           <legend
@@ -156,11 +191,15 @@ export default function VerifyForm() {
               fontSize: '1.15rem',
               fontWeight: 700,
               padding: 0,
-              marginBottom: '0.75rem',
+              marginBottom: '0.25rem',
             }}
           >
             Expected values (from the application)
           </legend>
+          <p style={{ ...hintText, marginTop: 0, marginBottom: '0.9rem' }}>
+            Enter at least one expected value. Beverage type and the label image
+            are needed to run a check.
+          </p>
 
           <div style={fieldWrap}>
             <label htmlFor="brand" style={label}>
@@ -199,9 +238,7 @@ export default function VerifyForm() {
               id="beverageType"
               name="beverageType"
               value={beverageType}
-              onChange={(e) =>
-                setBeverageType(e.target.value as BeverageType)
-              }
+              onChange={(e) => setBeverageType(e.target.value as BeverageType)}
               style={input}
             >
               {BEVERAGE_OPTIONS.map((o) => (
@@ -210,12 +247,16 @@ export default function VerifyForm() {
                 </option>
               ))}
             </select>
+            <p id="beverageType-help" style={hintText}>
+              Drives the alcohol-content rule: required for spirits, optional for
+              beer and table wine.
+            </p>
           </div>
 
           <div style={fieldWrap}>
             <label htmlFor="abv" style={label}>
               Alcohol content{' '}
-              <span style={{ fontWeight: 400, color: '#555' }}>
+              <span style={{ fontWeight: 400, color: COLORS.muted }}>
                 (optional for beer and table wine)
               </span>
             </label>
@@ -226,6 +267,7 @@ export default function VerifyForm() {
               style={input}
               placeholder={SAMPLE.abv}
               autoComplete="off"
+              aria-describedby="beverageType-help"
             />
           </div>
 
@@ -255,14 +297,9 @@ export default function VerifyForm() {
               accept={ACCEPT_ATTR}
               aria-describedby="image-help"
               style={{ ...input, padding: '0.55rem 0.75rem' }}
-              onChange={(e) =>
-                setImageName(e.target.files?.[0]?.name ?? null)
-              }
+              onChange={(e) => setImageName(e.target.files?.[0]?.name ?? null)}
             />
-            <p
-              id="image-help"
-              style={{ margin: '0.4rem 0 0', color: '#555', fontSize: '0.9rem' }}
-            >
+            <p id="image-help" style={hintText}>
               {imageName
                 ? `Selected: ${imageName}`
                 : `Upload a clear photo or scan of the label (${ACCEPTED_TYPES_LABEL}, up to ${MAX_IMAGE_LABEL}). If the read comes back unclear, try a sharper, straight-on image.`}
@@ -277,8 +314,8 @@ export default function VerifyForm() {
               padding: '0.8rem 1.5rem',
               borderRadius: 8,
               border: 'none',
-              background: verifying ? '#3a5d8f' : '#1f4e8c',
-              color: '#fff',
+              background: verifying ? COLORS.buttonBusyBg : COLORS.buttonBg,
+              color: COLORS.buttonText,
               cursor: verifying ? 'progress' : 'pointer',
               minWidth: 180,
             }}
@@ -289,7 +326,11 @@ export default function VerifyForm() {
           {verifying && (
             <p
               role="status"
-              style={{ margin: '0.6rem 0 0', color: '#1f4e8c', fontWeight: 600 }}
+              style={{
+                margin: '0.6rem 0 0',
+                color: COLORS.buttonBg,
+                fontWeight: 600,
+              }}
             >
               Reading the label and comparing fields… if the first read is
               unclear we run a closer check, which can take a few seconds longer.
@@ -301,33 +342,49 @@ export default function VerifyForm() {
       <div aria-live="polite">
         {error && (
           <div
+            ref={errorRef}
             role="alert"
+            tabIndex={-1}
             style={{
-              border: '1px solid #8a1c1c',
-              background: '#fbe9e9',
-              color: '#8a1c1c',
+              border: `1px solid ${COLORS.errorBorder}`,
+              background: COLORS.errorBg,
+              color: COLORS.errorFg,
               borderRadius: 8,
               padding: '1rem 1.1rem',
               fontWeight: 600,
             }}
           >
+            <span aria-hidden="true" style={{ marginRight: '0.5rem' }}>
+              ✖
+            </span>
             {error}
           </div>
         )}
 
-        {result && <ResultCard result={result} />}
+        {result && <ResultCard result={result} sectionRef={resultRef} />}
       </div>
     </div>
   );
 }
 
-function ResultCard({ result }: { result: VerificationResult }) {
+export function ResultCard({
+  result,
+  sectionRef,
+}: {
+  result: VerificationResult;
+  sectionRef: React.Ref<HTMLElement>;
+}) {
   const overall = overallPresentation(result.overall);
   return (
     <section
-      aria-label="Verification result"
+      ref={sectionRef}
+      tabIndex={-1}
+      aria-labelledby="result-heading"
       style={{ display: 'grid', gap: '1.25rem' }}
     >
+      <h2 id="result-heading" className="sr-only">
+        Verification result: {overall.label}
+      </h2>
       <div
         style={{
           background: overall.bg,
@@ -405,7 +462,7 @@ function ResultCard({ result }: { result: VerificationResult }) {
                     <span
                       style={{
                         display: 'block',
-                        color: '#444',
+                        color: COLORS.detail,
                         fontSize: '0.85rem',
                         marginTop: '0.2rem',
                       }}
@@ -449,7 +506,9 @@ function WarningSection({
         </span>
       </h3>
       {warning.detail && (
-        <p style={{ margin: '0 0 0.6rem', color: '#333' }}>{warning.detail}</p>
+        <p style={{ margin: '0 0 0.6rem', color: COLORS.detail }}>
+          {warning.detail}
+        </p>
       )}
       {warning.diff && warning.diff.length > 0 && (
         <>
@@ -463,7 +522,7 @@ function WarningSection({
               fontFamily:
                 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
               fontSize: '0.95rem',
-              background: '#fafafa',
+              background: COLORS.diffPanelBg,
               padding: '0.6rem 0.75rem',
               borderRadius: 6,
             }}
@@ -477,7 +536,7 @@ function WarningSection({
                   <span
                     key={i}
                     style={{
-                      color: '#8a1c1c',
+                      color: COLORS.diffRemoved,
                       textDecoration: 'line-through',
                     }}
                   >
@@ -489,7 +548,7 @@ function WarningSection({
                 <span
                   key={i}
                   style={{
-                    color: '#0f5d2a',
+                    color: COLORS.diffAdded,
                     textDecoration: 'underline',
                     fontWeight: 700,
                   }}
@@ -499,12 +558,16 @@ function WarningSection({
               );
             })}
           </p>
-          <p style={{ margin: '0.5rem 0 0', color: '#555', fontSize: '0.85rem' }}>
-            <span style={{ textDecoration: 'line-through', color: '#8a1c1c' }}>
+          <p style={{ margin: '0.5rem 0 0', color: COLORS.muted, fontSize: '0.85rem' }}>
+            <span
+              style={{ textDecoration: 'line-through', color: COLORS.diffRemoved }}
+            >
               struck-through
             </span>{' '}
             = required wording missing from the label;{' '}
-            <span style={{ textDecoration: 'underline', color: '#0f5d2a' }}>
+            <span
+              style={{ textDecoration: 'underline', color: COLORS.diffAdded }}
+            >
               underlined
             </span>{' '}
             = wording on the label that is not in the required text.
@@ -517,14 +580,14 @@ function WarningSection({
 
 const th: React.CSSProperties = {
   textAlign: 'left',
-  borderBottom: '2px solid #999',
+  borderBottom: '2px solid #767676',
   padding: '0.5rem 0.6rem',
   fontSize: '0.9rem',
   verticalAlign: 'top',
 };
 const td: React.CSSProperties = {
   textAlign: 'left',
-  borderBottom: '1px solid #ddd',
+  borderBottom: '1px solid #d4d4d4',
   padding: '0.6rem',
   verticalAlign: 'top',
 };

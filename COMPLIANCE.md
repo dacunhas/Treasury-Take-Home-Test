@@ -5,6 +5,47 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-12 — M3/T3.3 Accessibility pass
+
+**Overall: PASS.** All six T3.3 acceptance criteria and the §8 "UX & error handling"
+a11y lines are met and AUTOMATICALLY verified (jsx-a11y lint + axe + contrast,
+226/226 green). The sole unprovable clause (keyboard-only run *completes* a
+verification) depends on the deferred T3.4 browser E2E and is correctly out of scope.
+
+1. **Labels tied to inputs — PASS.** Every control has `<label htmlFor>`→`id`
+   (brand, classType, beverageType, abv, netContents, image); group in
+   `<fieldset>`/`<legend>`; help text via `aria-describedby`. axe (accessible-name
+   rules) passes.
+2. **Keyboard flow + visible focus states — PASS.** `:focus-visible` 3px ring +
+   `@supports not` fallback; skip link (first focusable) → focusable `<main>`; focus
+   moved to result on success / `role="alert"` on submit error / offending field on a
+   fixable validation error. Native controls → logical tab order, no traps.
+3. **AA contrast verified automatically — PASS.** `contrast.test.ts` enumerates every
+   rendered pair (`colors.ts` + `format.ts` maps) and asserts ≥4.5/≥3.0 with real
+   WCAG 2.1 math; this is the deliberate compensating control for axe's color-contrast
+   rule being unrunnable under jsdom.
+4. **Status by icon+text, not colour alone — PASS.** Banner, every field cell, and the
+   warning header render a text glyph (✔/⚠/✖/—, `aria-hidden`) + a plain-language word;
+   the diff legend also distinguishes by line-through/underline + a text key.
+5. **Automated a11y check exists + clean — PASS.** Three CI-runnable layers: axe-core
+   over the form + a representative results view (0 violations), `jsx-a11y/recommended`
+   lint (clean), contrast test. All green.
+6. **Plain language + large targets — PASS.** "Looks good"/"Please check"/"Doesn't
+   match" + friendly errors; 1rem+ fonts, full-width padded inputs, 1.05rem bold submit
+   with `minWidth:180` — comfortable for the over-50 / 73-year-old benchmark.
+
+**§8 UX/a11y lines:** "keyboard + screen-reader sane" PASS; "AA contrast" PASS;
+"status never color-only" PASS.
+
+### Honest gaps (DEFERRED, not FAIL)
+- Keyboard-only END-TO-END completion of a real verification needs a live browser →
+  T3.4 sample-label E2E (still TODO). Everything provable without a browser is covered.
+- (Resolved this run) `eslint-plugin-jsx-a11y` was transitive-only — now pinned as an
+  explicit devDep so the a11y lint rules can't silently disappear.
+
+### Open items to close before submission
+- [ ] T3.4 sample labels + a keyboard-only walkthrough in the README demo steps.
+
 ## 2026-06-11 (evening) — M3/T3.1 single-label UI
 
 **Overall: PASS.** Maps to CONTEXT §1/§2/§5 and PROJECT_PLAN §4/§8. No spec
