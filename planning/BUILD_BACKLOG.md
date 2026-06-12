@@ -279,7 +279,75 @@ Grouped by the PROJECT_PLAN §7 milestones.
 
 ---
 
+### T5.4 — Follow-up cleanup & process refinement  [TODO]  *(epic — pick ONE sub-item per run)*
+
+Gathers the open carry-over items below into one ordered, slip-pickable epic so a
+single unattended run still takes exactly one vertical slice. Order = priority.
+Do these AFTER the critical path (T5.1 doc) and M4 batch, EXCEPT a Priority-A item,
+which is a release-blocker and jumps the queue before deploy (T5.3). Each sub-item
+has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
+
+**Priority A — release-blockers (before T5.3 deploy):**
+- A1 — Bump `next` off `14.2.5` to the patched version (security advisory).
+  *Accept:* the advisory clears; `tsc`/lint/`next build` + full suite green.
+- A2 — Map a lazily-resolved `MissingConfigError` (missing key) to a friendly
+  `ExtractionError` at the `/api/verify` route boundary so the UI never sees a config
+  stack trace. *Accept:* missing-key path returns the friendly 503 JSON; test added.
+
+**Priority B — correctness/UX from real-label testing (Steve requests 6/11):**
+- B1 — Numeric ABV input + bare-number expected-parser tolerance (assume `%` for a
+  bare ABV). *Accept:* expected `13` compares to label `13% Alc./Vol.`; tests.
+- B2 — Net-contents NUMBER field + UNIT dropdown (default **mL**; mL/cL/L/fl oz; opt
+  pt/qt/gal) so the engine never guesses a bare number's unit; OPTIONAL non-silent
+  smart-suggest (overrideable, defaults mL when ambiguous — never auto-flip).
+  *Accept:* bare `750` + selected unit compares cleanly; suggestion is overrideable;
+  a11y preserved. Ship WITH B1 so UI + parser stay consistent.
+- B3 — flash-lite confidence-threshold tuning: validate on real hard photos; consider
+  raising `EXTRACTION_CONFIDENCE_THRESHOLD` (env, default 0.7) so heavy-blur escalates
+  to Sonnet. *Accept:* a heavy-blur sample escalates (or a documented reason it doesn't).
+
+**Priority C — robustness / test hardening:**
+- C1 — Extend the abort deadline to cover the response-body read (`response.json()`),
+  not just `fetch`, in BOTH `gemini.ts` and `sonnet.ts` (keep the tiers symmetric).
+  *Accept:* a slow-body test is bounded by `timeoutMs`.
+- C2 — Pin exact-boundary regression tests landing on `ratio === 0.80` / `=== 0.95`
+  to lock the `>=` threshold semantics (textMatch). *Accept:* both boundaries tested.
+- C3 — Direct `compareClassType` missing/null test for parity with `compareBrand`.
+- C4 — `parseNetContents('750ML')` (unit-glued, upper-cased) regression test.
+
+**Priority D — decisions + doc-only (rationale folds into T5.1 README):**
+- D1 — Brand/class case-only difference (`kendall-jackson` vs `KENDALL-JACKSON`):
+  stakeholder decision whether a pure case difference should be clean `match` instead
+  of the current `review`. *Accept:* decision recorded + behavior matches it.
+- D2 — Add a clarifying comment on the ABV proof-only spirits path (proof≈2×ABV
+  cross-check can't disagree with a self-derived value).
+- D3 — Confirm/surface intent of `finerThanTenthPrecision` (computed for all types,
+  consumed only for beer per the 0.1% spec scope).
+- D4 — README limitation: beer ABV becomes *required* with added-flavor/nonbeverage
+  alcohol or where state law requires it; the engine treats beer ABV as
+  unconditionally optional (no ingredient/state input). Document honestly (→ T5.1).
+- D5 — Tidy or document the NITs: net-contents `gal` factor precision; client preflight
+  MIME list vs Sonnet's; empty-`type` image → "type not supported" preflight branch.
+
+**Process refinement (apply once; not per-run slices):**
+- P1 — Treat freshly-cloned `main` as the ONLY authority for `planning/*`. The
+  connected-folder copies lagged this week and the folder copy of `AGENTS.md` is
+  truncated at §7 — confusing under load. Fix: either (a) have Steve periodically sync
+  the connected folder from `main`, or (b) drop the folder `planning/*` from the
+  per-run read list and read them from the clone. Update AGENTS.md §3 + the run prompt.
+- P2 — `/tmp` disk hygiene: clone to a UNIQUE dir each run (leftover `node_modules`
+  owned by `nobody` can't be removed; `/tmp` ran ~88–93% full). Add a free-space check
+  and the documented ENOSPC fallback (minimal vitest+typescript scratch toolchain).
+- P3 — Slice-selection order once the critical path is complete, stated explicitly:
+  Priority-A release-blockers → M4 batch → T5.4 cleanup epic → remaining polish. Avoids
+  ambiguity about "the next TODO."
+- P4 — Keep token handling inline-URL-only and scrub the scratch token file at run end
+  (done this run); never persist it in `.git/config` or any file.
+
 ## Carry-over from review (from AUDIT.md / COMPLIANCE.md — address in owning milestone)
+
+*These are now consolidated and prioritized under **T5.4** above; the list below is
+the source detail. Resolve via T5.4 sub-items (one per run).*
 - [M3/T3.x Net-contents unit dropdown — Steve request 2026-06-11] Replace the free-text
   net-contents entry with a NUMBER field + a UNIT dropdown of common alcohol container
   units (default **mL**; offer mL, cL, L, fl oz; optionally pt/qt/gal). The chosen unit
