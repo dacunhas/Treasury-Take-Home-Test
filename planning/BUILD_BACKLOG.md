@@ -345,11 +345,13 @@ Grouped by the PROJECT_PLAN §7 milestones.
   `ExtractionError` at the route boundary so the UI never sees a config stack trace.
   (Carried from the T1.1 run.)
 - [M5] `next@14.2.5` has a security advisory — bump before deploy. (Carried from T1.1.)
-- [M2/T2.5] Thread `beverageType` into the net-contents verdict so an equal quantity
-  in U.S. fl oz on a BEER label resolves to `match` (currently `review`); spirits/wine
-  stated in fl oz stays a flag. Conservative `review` ships now; the full conditional
-  belongs with the aggregate verdict (mirror `abv.ts`). (T2.3 AUDIT MAJOR M2;
-  compliance ruled the conservative default a PASS, not a FAIL.)
+- [M2/T2.5] **RESOLVED 2026-06-12 (evening).** Threaded `beverageType` into the
+  net-contents verdict: a BEER label stated in U.S. fl oz vs an expected metric value
+  now resolves to `match` (either system acceptable for malt beverages); spirits/wine
+  (and unknown/omitted type) keep the conservative `review` (metric required). Mirrors
+  `abv.ts`; wired via `aggregate.ts` (`expected.beverageType`). +7 tests (38 net-
+  contents / 233 total green). Closed the T2.3 AUDIT MAJOR M2. (auditor APPROVE,
+  compliance PASS this run.)
 - [M3/T3.2 NIT] The client preflight MIME list (drift-guarded against the GEMINI
   `SUPPORTED_MIME_TYPES`) differs from `SONNET_SUPPORTED_MIME_TYPES` (Sonnet adds
   `image/gif`, omits `heic`/`heif`). Harmless today (Gemini is the documented

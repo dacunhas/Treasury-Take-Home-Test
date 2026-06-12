@@ -10,13 +10,18 @@
  *   - normalize to a canonical millilitre quantity (mL <-> cL <-> L, fl oz / pt / qt / gal)
  *   - compare the quantities within a small relative tolerance
  *
- * Measurement-system note (CONTEXT §5): distilled spirits and wine must state net
- * contents in metric (mL / L); beer / malt may use U.S. measures (fl oz). So an
- * equal quantity expressed in a DIFFERENT measurement system than expected is a
- * "looks right, a human should glance" case -> `review`, never a silent pass. An
- * equal quantity within the same system (e.g. 1 L vs 1000 mL) is a clean `match`.
+ * Measurement-system note (CONTEXT §5), CONDITIONAL on beverage type: distilled
+ * spirits and wine must state net contents in metric (mL / L); beer / malt may use
+ * U.S. measures (fl oz). So an equal quantity expressed in a DIFFERENT measurement
+ * system than expected is:
+ *   - for BEER: a clean `match` (either system is acceptable);
+ *   - for spirits/wine (or an unknown beverage type): a "looks right, a human should
+ *     glance" case -> `review`, never a silent pass.
+ * An equal quantity within the SAME system (e.g. 1 L vs 1000 mL) is always a clean
+ * `match`. Pass `beverageType` to enable the beer allowance; omit it for the
+ * conservative (review-on-cross-system) default.
  */
-import type { FieldResult } from '@/types';
+import type { BeverageType, FieldResult } from '@/types';
 
 const FIELD = 'Net Contents';
 
@@ -142,6 +147,7 @@ export interface NetContentsCompareOptions {
 export function compareNetContents(
   expected: string,
   found: string | null,
+  beverageType?: BeverageType,
   options: NetContentsCompareOptions = {},
 ): FieldResult {
   const toleranceRatio = options.toleranceRatio ?? 0.01;
@@ -209,11 +215,26 @@ export function compareNetContents(
   // (metric expected, U.S. on the label or vice-versa) -> review, because
   // spirits/wine must state metric and that judgment belongs to a human.
   if (pe.system !== pf.system) {
+    // CONTEXT §5: beer / malt beverages MAY state net contents in U.S. fluid
+    // measures (fl oz); distilled spirits and wine MUST use metric (mL / L). So an
+    // equal quantity in a different measurement system is a clean `match` for beer
+    // (either system is acceptable), but a human-review flag for spirits/wine —
+    // and for an unknown beverage type we keep the conservative `review`, never a
+    // silent pass. (Mirrors the conditional-by-beverage-type design in `abv.ts`;
+    // resolves the T2.3 AUDIT MAJOR carried to T2.5.)
+    if (beverageType === 'beer') {
+      return result(
+        expected,
+        found,
+        'match',
+        `Matches (${fmt(pe.value ?? 0)} ${pe.unit} = ${fmt(pf.value ?? 0)} ${pf.unit}); U.S. fluid measure is acceptable for malt beverages.`,
+      );
+    }
     return result(
       expected,
       found,
       'review',
-      `Same quantity, stated in a different measurement system: expected ${fmt(pe.value ?? 0)} ${pe.unit}, the label shows ${fmt(pf.value ?? 0)} ${pf.unit} (~ ${fmt(pf.ml)} mL). Please confirm the unit is acceptable for this beverage type.`,
+      `Same quantity, stated in a different measurement system: expected ${fmt(pe.value ?? 0)} ${pe.unit}, the label shows ${fmt(pf.value ?? 0)} ${pf.unit} (~ ${fmt(pf.ml)} mL). Spirits and wine must state metric (mL / L); please confirm the unit is acceptable for this beverage type.`,
     );
   }
 

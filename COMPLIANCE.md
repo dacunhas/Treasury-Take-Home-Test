@@ -555,3 +555,27 @@ conditional escalation fires on low confidence as specified. All cases stayed ~2
 all blur levels. Open tuning item (BACKLOG): a heavy-blur case returned `fail` without
 escalating (possible confidently-wrong) — consider a slightly more eager confidence
 threshold; safe direction, not a failure.
+
+---
+
+## 2026-06-12 (evening) — M2/T2.5 net-contents beverage-type conditional — PASS
+
+Reviewed the slice threading `beverageType` into `compareNetContents` against
+CONTEXT §5 (measurement-system rule) + PROJECT_PLAN §3/§8.
+
+- Encodes CONTEXT §5: spirits & wine MUST state metric (mL/L); beer/malt MAY use U.S.
+  fluid measures (fl oz). Cross-system equal quantity -> `match` for beer, `review`
+  otherwise. **PASS**
+- Never silently passes a spirits/wine label stated in U.S. units: those stay
+  `review`, detail now names the rule ("Spirits and wine must state metric…"). **PASS**
+- Unknown/omitted beverage type defaults to the conservative `review` (closed union
+  has no 'unknown'; `=== 'beer'` guard fails safe). **PASS**
+- Beer becomes a clean `match` (removes false-review noise) but allowance is
+  SYSTEM-ONLY — a different fill still `mismatch`. **PASS**
+- Assist-not-adjudicate / human-in-the-loop posture + plain-language detail preserved;
+  stateless / no-PII unaffected (pure engine; `aggregate.ts` wires an already-collected
+  form field). **PASS**
+
+**RESOLVES the carried net-contents beverage-type item** (BUILD_BACKLOG "Carry-over",
+T2.3 AUDIT MAJOR M2). Upgrades the prior conservative `review` default to the full
+conditional with no regression in the assist-not-adjudicate guarantee. **Overall: PASS.**
