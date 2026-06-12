@@ -377,7 +377,8 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
   pt/qt/gal) so the engine never guesses a bare number's unit; OPTIONAL non-silent
   smart-suggest (overrideable, defaults mL when ambiguous — never auto-flip).
   *Accept:* bare `750` + selected unit compares cleanly; suggestion is overrideable;
-  a11y preserved. Ship WITH B1 so UI + parser stay consistent. **STRICT-NEXT (TODO).**
+  a11y preserved. Ship WITH B1 so UI + parser stay consistent.
+  **DONE 2026-06-12 (evening run).** Net contents is now a NUMBER `<input>` (`inputMode="decimal"`) + a UNIT `<select>` (default **mL**; mL/cL/L/fl oz, then opt pt/qt/gal — every option a symbol `parseNetContents` canonicalizes). New pure helper `src/lib/ui/netContentsInput.ts`: `composeNetContents(value,unit)` builds the canonical "<value> <unit>" string the engine already parses and the form POSTs as `netContents` (raw parts `delete`d before submit), so the engine **never receives a bare number from this form** — a present value always carries a unit, a blank value stays `''` (optional). `suggestNetContentsUnit` is an OPTIONAL non-silent hint (fires only when the mL default is implausible, e.g. "0.75"->litres); it renders a `role="status"` line with a "Use L" button the user clicks — the dropdown is **never auto-flipped**. The engine (`netContents.ts`) is UNCHANGED, so its unit-less->`review` and cross-system->`review` guards stay in force (regression-guarded by the new compose tests + the existing `netContents.test.ts`). 16 new tests (328/328 total green; tsc/lint/`next build` clean; axe a11y still 0 violations). Auditor APPROVE (no BLOCKER/MAJOR; 1 MINOR dead `SAMPLE.netContents` + 1 comment NIT, both self-triaged in-run); compliance RELEASABLE (all 5 PASS).
   B1 shipped alone this run; the ABV hint was scoped to its own field (`aria-describedby`)
   so it can't teach "bare numbers are always safe", and a unit-less net-contents number
   still routes to `review` (never a silent wrong pass), so deferring B2 leaves no
@@ -405,6 +406,9 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
   (`network|http|empty|input|timeout|unknown`): only `input` -> the image message, the
   other five -> the retry message. Locks the 502 contract (auditor NIT, T5.4/A2 run; only
   `input`+`http` currently exercised). *Accept:* all six codes asserted.
+- C6 — Add a `buttonBg`-on-white foreground/background case to `contrast.test.ts`
+  (the B2 net-contents suggestion text uses it; ~7.8:1, AA-passing but unenumerated).
+  *Accept:* the pair is asserted >= 4.5:1. (T5.4/B2 compliance NIT — coverage only.)
 
 **Priority D — decisions + doc-only (rationale folds into T5.1 README):**
 - D1 — Brand/class case-only difference (`kendall-jackson` vs `KENDALL-JACKSON`):
