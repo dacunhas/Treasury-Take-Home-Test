@@ -264,11 +264,16 @@ export default function VerifyForm() {
               id="abv"
               name="abv"
               type="text"
+              inputMode="decimal"
               style={input}
               placeholder={SAMPLE.abv}
               autoComplete="off"
-              aria-describedby="beverageType-help"
+              aria-describedby="beverageType-help abv-help"
             />
+            <p id="abv-help" style={hintText}>
+              In this field a plain number is read as a percentage — enter “45”
+              for 45% Alc./Vol., or type it in full exactly as printed.
+            </p>
           </div>
 
           <div style={fieldWrap}>

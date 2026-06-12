@@ -360,11 +360,29 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
 **Priority B — correctness/UX from real-label testing (Steve requests 6/11):**
 - B1 — Numeric ABV input + bare-number expected-parser tolerance (assume `%` for a
   bare ABV). *Accept:* expected `13` compares to label `13% Alc./Vol.`; tests.
+  **DONE 2026-06-12 (evening run).** `parseAbv` gained a bare-number fallback: when the
+  whole trimmed string is a plain number (`^\d+(\.\d+)?$`) and nothing else parsed an
+  ABV, it is read as that percentage (anchored `^...$`, so it never grabs a digit from a
+  richer string — proof, net contents, "Table Wine"; `90 Proof` keeps deriving ABV from
+  proof). A `<= 100%` clamp rejects an implausible bare value (a proof/net-contents number
+  mistyped into the field) — so the shared parser never invents a giant ABV from a stray
+  big number on the found side either. Decimal-precision tracking retained, so the beer
+  0.1% flag still works on bare input. Form: ABV `<input>` gains `inputMode="decimal"` +
+  an ABV-scoped hint ("In this field a plain number is read as a percentage…"). 12 new
+  tests (312/312 total green; tsc/lint/`next build` clean). Auditor CHANGES-REQUESTED ->
+  self-triaged in-run (<=100 clamp + `countDecimals` de-dup + hint scoped); compliance
+  RELEASABLE. `compareAbv`'s conditional-by-beverage-type logic is unchanged — only the
+  parse of a bare expected number improved.
 - B2 — Net-contents NUMBER field + UNIT dropdown (default **mL**; mL/cL/L/fl oz; opt
   pt/qt/gal) so the engine never guesses a bare number's unit; OPTIONAL non-silent
   smart-suggest (overrideable, defaults mL when ambiguous — never auto-flip).
   *Accept:* bare `750` + selected unit compares cleanly; suggestion is overrideable;
-  a11y preserved. Ship WITH B1 so UI + parser stay consistent.
+  a11y preserved. Ship WITH B1 so UI + parser stay consistent. **STRICT-NEXT (TODO).**
+  B1 shipped alone this run; the ABV hint was scoped to its own field (`aria-describedby`)
+  so it can't teach "bare numbers are always safe", and a unit-less net-contents number
+  still routes to `review` (never a silent wrong pass), so deferring B2 leaves no
+  compliance gap. When B2 lands, give net contents its own explicit-unit affordance and
+  regression-guard the unit-less->`review` routing (compliance note, this run).
 - B4 — Batch CSV **template download** button (Steve request 2026-06-12).
   **DONE 2026-06-12 (interactive).** Pure `buildTemplateCsv()` (`src/lib/batch/template.ts`)
   emits a correctly-shaped CSV (header + 2 valid example rows: a spirits row and a beer

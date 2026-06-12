@@ -5,6 +5,49 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-12 (evening run) — T5.4 / B1 bare-number ABV tolerance
+
+**Verdict: CHANGES-REQUESTED on first pass; all actioned items fixed in-run. Final: clean.**
+
+Audited the full slice diff: `src/lib/comparison/abv.ts` (`parseAbv` bare-number
+fallback), `src/lib/comparison/abv.test.ts` (12 new tests), `src/components/VerifyForm.tsx`
+(ABV input affordance). Pure/deterministic; no secrets, network, or model calls.
+
+### MAJOR (first pass) — addressed in-run
+- Shared `parseAbv` meant the new bare-number tolerance also applied to the found
+  (extractor) side, in theory promoting a stray bare number to an ABV. **Resolution:**
+  added a `<= 100%` clamp on the bare-number branch — ABV cannot exceed 100%, so a stray
+  large bare number is rejected on either side; and a bare value in the extractor's `abv`
+  field genuinely IS the label's stated ABV, so reading a plausible one (<=100) is more
+  correct than dropping it to null (current found-side behavior is otherwise unchanged).
+  Gating strictly to the input side was considered and rejected for that reason.
+
+### MINOR (first pass) — fixed in-run
+- No upper bound on the bare number (`750`/`150` would read as 750%/150% ABV). **Fixed:**
+  `<= 100%` clamp; tests pin `750`/`150` -> null, `100` accepted.
+- Decimal-place computation duplicated between the percent and bare branches. **Fixed:**
+  extracted `countDecimals(numStr)` helper, used in both.
+
+### NIT (first pass)
+- Hint copy referenced `45` while the placeholder is the full `SAMPLE.abv` — reworded the
+  hint to be ABV-scoped and self-consistent ("enter 45 for 45% Alc./Vol.").
+
+### Confirmed clean
+- Anchored `^...$` regex cannot grab a digit from a longer string (proof, net contents,
+  "Table Wine") — pinned by the `Lot 12345`->null test. Bare fallback only fires when the
+  anchored/bare-`%` search found nothing, so percent precedence is untouched.
+- `90 Proof` is not a bare number (has "Proof"); proof parse + ABV-from-proof derivation
+  preserved (test-pinned). Table/Light Wine + beer "ABV"-abbrev / 0.1%-precision flags
+  depend on textual markers a bare number lacks — no interaction.
+- `aria-describedby` with two space-separated IDs is valid ARIA; both targets exist; axe
+  suite passes. `inputMode="decimal"` with `type="text"` still accepts the full statement.
+- `compareAbv` conditional-by-beverage-type logic unchanged. 312/312 green; tsc/lint/build
+  clean.
+
+**Final status: APPROVE (post-triage). No open BLOCKER/MAJOR.**
+
+---
+
 ## 2026-06-12 — M4/T4.2 Batch results table + export
 
 **Verdict: SHIP-READY. No BLOCKER/MAJOR. 3 MINOR (1 fixed in-run, 2 logged) + NITs.**
