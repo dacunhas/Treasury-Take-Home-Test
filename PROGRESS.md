@@ -4,6 +4,73 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-12 (evening run ~6 PM ET) — M3 / T3.4 Sample test labels
+
+**Slice built:** T3.4 — sample test labels. Strict-next TODO on freshly-cloned `main`
+(HEAD was PR #19, M3 T3.1/T3.2/T3.3 all DONE; the connected-folder planning copies lag
+several PRs, as the run contract warns — they still showed T3.1–T3.3 as TODO). No open
+BLOCKER/MAJOR/compliance-FAIL on entry, so picked the strict-next TODO. One slice only.
+
+**What was built (pure assets + docs — no `src/` change)**
+- `samples/generate_samples.py` — deterministic, **Pillow-only** generator (a pure-
+  Python 8×8 Gaussian-elimination solver replaces numpy for the perspective warp, so
+  the script is truly dependency-light and reproducible). Renders the 5 labels +
+  `EXPECTED.csv`. The canonical Government Warning string is kept byte-identical to
+  `src/lib/governmentWarning.ts` (with a header note to re-sync if that constant moves).
+- `samples/` PNGs (1000×1400, the bad-photo larger after warp):
+  1. `01-old-tom-bourbon-compliant.png` — clean spirits, the CONTEXT §5 sample
+     (Old Tom Distillery / Kentucky Straight Bourbon / 45% Alc./Vol. (90 Proof) /
+     750 mL / canonical warning, bold caps prefix). Expect **pass**.
+  2. `02-old-tom-bourbon-bad-warning.png` — title-case `Government Warning:` prefix +
+     reworded/shortened clauses → strict warning **fail** + word diff.
+  3. `03-cascade-summit-pale-ale-beer-no-abv.png` — beer, **no ABV** statement,
+     12 FL OZ → ABV optional, not failed. Expect **pass**.
+  4. `04-stones-throw-table-wine.png` — label brand ALL-CAPS `STONE'S THROW` vs
+     expected `Stone's Throw` → tolerant-brand **review** (the Dave case); `Table
+     Wine` in lieu of numeric ABV (7–14% class) → ABV not "missing". Expect **review**.
+  5. `05-old-tom-bourbon-angled-glare.png` — #1 perspective-tilted + glare + slight
+     blur on a dark desk (Jenny bad-photo). Same values as #1. Expect **pass** (read
+     by the vision model; low-confidence reads escalate to the deep tier).
+- `samples/EXPECTED.csv` — expected COLA values + target overall verdict per label
+  (also a ready M4 batch fixture). `samples/README.md` — per-label table + a
+  numbered "How to demo" walkthrough. Top-level `README.md` — new "Try it with the
+  sample labels" section linking the folder, the CSV, and the per-label README.
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `next lint` clean;
+`vitest run` **226/226** (unchanged — no testable code added; the extractor is not
+involved); `next build` succeeds. Generator re-run **with numpy uninstalled** to prove
+the Pillow-only claim; all 5 PNGs + CSV regenerate; the warp + glare render correctly
+(spot-checked visually).
+
+**Reviews:** code auditor — content sound; **canonical warning byte-identical** to the
+source constant (programmatically compared); bad-warning genuinely non-compliant on
+both axes; EXPECTED.csv verdicts cross-checked against the actual pure engine. The one
+substantive flag was "samples/ not yet `git add`ed" — that is just this run's pending
+commit (resolved by the push below), not a code defect. NIT: generator claimed
+"Pillow only" but imported numpy → **FIXED in-run** (pure-Python solver; numpy removed;
+docstring/README accurate). Compliance — **PASS** on all 6 criteria (non-compliant
+warning + angled/glare present; conditional-ABV beer/table-wine not failed; STONE'S
+THROW review; canonical verbatim; committed + README-referenced; CSV verdicts
+consistent).
+
+**Self-triage:** fixed the numpy NIT in-run (removed the dependency) and added a
+one-line honesty note to `samples/README.md` re: label 4's ABV row depending on which
+field the extractor routes "Table Wine" into (overall verdict unaffected — brand drives
+the review). Label 5's pass is model-dependent by nature (a real photo read) and is
+framed as a manual/E2E expectation in the CSV + README, not a deterministic guarantee.
+
+**Open finding for Steve (carried, not this slice):** `next@14.2.5` security advisory —
+still recommend a small standalone "bump Next" PR before submission.
+
+**Next task:** M5 / T5.1 — README + approach/assumptions doc (the last critical-path
+doc before deploy), OR M4 batch mode (the slip-line, see schedule status in the report).
+
+**Blockers:** none.
+
+**Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-12 (overnight run ~1 AM ET) — M3 / T3.3 Accessibility pass
 
 **Slice built:** T3.3 — accessibility pass. Strict-next TODO on freshly-cloned `main`

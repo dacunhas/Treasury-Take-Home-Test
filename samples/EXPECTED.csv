@@ -1,0 +1,6 @@
+"filename","brand","classType","abv","netContents","beverageType","expectedOverall","notes"
+"01-old-tom-bourbon-compliant.png","Old Tom Distillery","Kentucky Straight Bourbon Whiskey","45% Alc./Vol. (90 Proof)","750 mL","spirits","pass","Baseline compliant spirits label (CONTEXT 5 sample)."
+"02-old-tom-bourbon-bad-warning.png","Old Tom Distillery","Kentucky Straight Bourbon Whiskey","45% Alc./Vol. (90 Proof)","750 mL","spirits","fail","Title-case 'Government Warning:' prefix + reworded clauses -> warning FAIL + diff."
+"03-cascade-summit-pale-ale-beer-no-abv.png","Cascade Summit","Pale Ale","","12 fl oz","beer","pass","Beer with NO ABV statement (optional for malt beverages) -> NOT failed."
+"04-stones-throw-table-wine.png","Stone's Throw","Table Wine","","750 mL","wine","review","Label brand ALL CAPS STONE'S THROW vs expected Stone's Throw -> brand review; 'Table Wine' in lieu of numeric ABV (7-14% class) -> ABV not missing."
+"05-old-tom-bourbon-angled-glare.png","Old Tom Distillery","Kentucky Straight Bourbon Whiskey","45% Alc./Vol. (90 Proof)","750 mL","spirits","pass","Same values as #1 but tilted + glare + blur (Jenny bad-photo case); vision model handles it, may escalate to the deep tier on low confidence."

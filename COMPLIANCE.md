@@ -5,6 +5,39 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-12 — M3/T3.4 sample test labels
+
+**Overall: PASS** on all 6 criteria. Satisfies PROJECT_PLAN §6 (sample labels incl. a
+deliberately non-compliant warning + an angled/glare photo) and the T3.4 acceptance
+("committed to samples/; referenced in README demo steps").
+
+1. **Non-compliant warning + angled/glare both present — PASS.**
+   `02-...-bad-warning.png` (title-case prefix + reworded clauses → mismatch/fail) and
+   `05-...-angled-glare.png` (perspective tilt + glare blob + blur).
+2. **Conditional ABV by beverage type represented as compliant-not-failed — PASS.**
+   Beer `03` (no ABV statement, expected ABV blank → `match`, optional); wine `04`
+   ("Table Wine" in lieu of numeric ABV); spirits `01`/`05` carry real `45% Alc./Vol.
+   (90 Proof)`.
+3. **Tolerant STONE'S THROW (Dave) → review not fail — PASS.** Label renders all-caps
+   `STONE'S THROW`; EXPECTED.csv brand `Stone's Throw`, overall `review`. Matches
+   `compareBrand` behavior.
+4. **Canonical warning verbatim + bad one genuinely wrong — PASS.** Generator's
+   warning string byte-identical to `src/lib/governmentWarning.ts`; #2 wrong on both
+   axes (caps prefix + wording).
+5. **Committed to samples/ + referenced in README demo steps — PASS.** 5 PNGs + CSV +
+   generator + `samples/README.md` under `samples/`; top-level README "Try it with the
+   sample labels" section links them.
+6. **EXPECTED.csv verdicts consistent with documented engine behavior — PASS.** Per-
+   label rollups re-verified against the pure comparison engine; no mis-resolving claim.
+
+### Open items to close before submission (non-blocking)
+- Label 4's ABV ROW (not the overall verdict) depends on whether the extractor routes
+  "Table Wine" into the `abv` field vs only `classType`; noted in `samples/README.md`.
+  Overall verdict is review regardless (brand drives it).
+- Label 5's pass is model-dependent (a real vision read of a degraded photo) — framed
+  as a manual/E2E demo expectation in the CSV + README, not a deterministic guarantee.
+
+
 ## 2026-06-12 — M3/T3.3 Accessibility pass
 
 **Overall: PASS.** All six T3.3 acceptance criteria and the §8 "UX & error handling"
