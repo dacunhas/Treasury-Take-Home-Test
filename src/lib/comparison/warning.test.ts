@@ -63,12 +63,22 @@ describe('checkGovernmentWarning — acceptance matrix', () => {
     }
   });
 
-  it('correct words, only body letter-casing differs -> review (not a hard fail)', () => {
+  it('correct words, only body letter-casing differs -> match (body case is not regulated)', () => {
     const bodyCaseTweak = CANON.replace('According', 'ACCORDING');
     const r = checkGovernmentWarning(bodyCaseTweak);
-    expect(r.status).toBe('review');
+    expect(r.status).toBe('match');
     expect(r.prefixCaps).toBe(true);
     expect(r.textMatch).toBe(false);
+    expect(r.detail).toMatch(/acceptable/i);
+    expect(r.detail).toMatch(/bold\/font-size/i);
+  });
+
+  it('entire warning in ALL CAPS (compliant prefix + wording) -> match', () => {
+    const allCaps = CANON.toUpperCase();
+    const r = checkGovernmentWarning(allCaps);
+    expect(r.status).toBe('match');
+    expect(r.prefixCaps).toBe(true);
+    expect(r.diff).toBeUndefined();
   });
 
   it('extra trailing text on the label -> mismatch with an added segment', () => {
