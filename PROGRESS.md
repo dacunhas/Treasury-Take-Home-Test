@@ -4,6 +4,68 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-12 (overnight run ~1 AM ET) — M3 / T3.3 Accessibility pass
+
+**Slice built:** T3.3 — accessibility pass. Strict-next TODO on freshly-cloned `main`
+(which was several PRs ahead of the connected-folder copies — main HEAD was PR #18, with
+T3.1 + T3.2 already DONE; the folder copies lagged, as the run contract warns). No open
+BLOCKER/MAJOR/compliance-FAIL on entry, so picked the strict-next TODO. One slice only.
+
+**What was built**
+- `src/app/globals.css` (new) — the few a11y concerns that need real CSS (not inline
+  styles): a single visible `:focus-visible` ring (3px, deep-blue, with a `@supports not`
+  `:focus` fallback) so the keyboard focus indicator is consistent across the form fields
+  AND the dark "Verify" button (browser default was easy to lose on the blue button); a
+  `.sr-only` utility; a focus-revealed **skip link**; and a `prefers-reduced-motion` guard.
+- `src/app/layout.tsx` / `page.tsx` — imports the stylesheet; renders the skip link as the
+  first focusable element targeting a focusable `<main id="main-content" tabIndex={-1}>`
+  landmark; bumped a borderline grey to an AA token.
+- `src/components/VerifyForm.tsx` — **focus management** (move focus to the result
+  `<section tabIndex={-1}>` on success, to the `role="alert"` region on a submit-time
+  failure, and to the offending field on a fixable validation error); `aria-describedby`
+  wiring (beverage-type rule + image help); palette tokens; `ResultCard` exported for the
+  a11y test. Status was already conveyed by glyph + word (kept).
+- `src/lib/ui/colors.ts` (new) — single-source UI palette (previously inline literals).
+- `src/lib/ui/contrast.ts` (new) — **pure WCAG 2.1 contrast math** (relative luminance +
+  ratio + AA thresholds), I/O-free, runs under the existing `node` vitest env.
+
+**Automated a11y check (the T3.3 acceptance) = three CI-runnable layers**
+- `src/lib/ui/contrast.test.ts` (new, 13 tests) — enumerates EVERY rendered fg/bg pair
+  (the `format.ts` verdict/field presentation maps + the `colors.ts` palette) and asserts
+  ≥4.5 (text) / ≥3.0 (borders, focus ring). This deliberately back-fills the one rule axe
+  can't run under jsdom (color-contrast needs a layout engine).
+- `src/components/VerifyForm.a11y.test.tsx` (new, 2 tests) — renders the form AND a
+  representative results view to static markup, mounts each in jsdom, runs **axe-core**,
+  asserts **0 violations** (structural rules: names/labels, landmarks, table/heading
+  semantics, ARIA validity).
+- `plugin:jsx-a11y/recommended` added to `.eslintrc.json`; `eslint-plugin-jsx-a11y` pinned
+  as an explicit devDep (so the rules can't silently vanish on a future Next bump).
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `next lint` clean (now incl.
+jsx-a11y recommended); `vitest run` **226/226** (15 new: 13 contrast + 2 axe — no live model
+calls; the extractor is not involved in a UI slice); `next build` succeeds. New devDeps
+(`jsdom`, `axe-core`, explicit `eslint-plugin-jsx-a11y`) are dev-only.
+
+**Reviews:** code auditor = **no BLOCKER/MAJOR** (3 NIT; WCAG math + focus-effect deps +
+no-secrets all verified). Compliance = **PASS** on all 6 T3.3 criteria + the §8 "keyboard +
+screen-reader sane / AA contrast / status never color-only" lines. Self-triage: applied 2
+safe NITs in-run — reuse the `--focus-ring` CSS var in `.skip-link`; pin jsx-a11y as an
+explicit devDep — re-ran lint + tests green. Remaining NITs (index keys on a static diff;
+a comment) need no action.
+
+**Honest gap (DEFERRED, not a fail):** keyboard-only END-TO-END *completion* of a real
+verification can't be proven from static tests — that needs a live browser and is the
+T3.4 sample-label E2E (still TODO). Everything provable without a browser is covered and
+automatically gated.
+
+**Next task:** M3 / T3.4 — sample/test labels (CONTEXT §5 fields incl. one non-compliant
+warning, one angled/glare photo, one beer-no-ABV, one table wine) committed to `samples/`
+and referenced in the README demo steps; this also exercises the keyboard-only E2E clause.
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-11 (interactive) — flash-lite blurry-escalation validation (de-risk model lock)
 
 Probed the live URL (now `gemini-3.1-flash-lite` default) with progressively degraded

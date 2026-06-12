@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'TTB Label Verification',
@@ -16,8 +17,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           fontFamily:
             'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
           lineHeight: 1.5,
+          color: '#1a1a1a',
+          background: '#ffffff',
         }}
       >
+        {/* Skip link: first focusable element, lets keyboard users jump the
+            header straight to the form (T3.3). */}
+        <a href="#main-content" className="skip-link">
+          Skip to the verification form
+        </a>
         {children}
       </body>
     </html>

@@ -193,10 +193,23 @@ Grouped by the PROJECT_PLAN §7 milestones.
   `next build` clean. Reviews: AUDIT PASS (no BLOCKER/MAJOR/MINOR), COMPLIANCE PASS
   (9/9). Full a11y sweep = T3.3; sample-label browser E2E = T3.4 (not gold-plated).
 
-### T3.3 — Accessibility pass  [TODO]
+### T3.3 — Accessibility pass  [DONE 2026-06-12]
 - Semantic HTML, labels tied to inputs, keyboard flow, focus states, AA contrast,
   status by icon+text (not color alone), large targets, plain language.
 - **Accept:** keyboard-only run completes a verification; automated a11y check clean.
+- Done: `src/app/globals.css` (visible `:focus-visible` ring + `@supports` fallback,
+  `.sr-only`, focus-revealed skip link, `prefers-reduced-motion` guard); skip link +
+  focusable `<main id="main-content">` landmark; `VerifyForm` focus management
+  (focus → result on success, → `role="alert"` on submit error, → offending field on a
+  fixable validation error) + `aria-describedby` wiring + palette tokens. New
+  `src/lib/ui/colors.ts` (single-source palette) + pure `contrast.ts` (WCAG 2.1 math).
+  AUTOMATED a11y check = three layers: `contrast.test.ts` (asserts every rendered
+  fg/bg pair clears AA — back-fills the one rule axe cannot run under jsdom),
+  `VerifyForm.a11y.test.tsx` (axe-core, 0 violations on the form + a representative
+  results view), and `plugin:jsx-a11y/recommended` lint (jsx-a11y pinned as an explicit
+  devDep). 226/226 green; tsc + `next lint` + `next build` clean. Status conveyed by
+  glyph+word everywhere (never colour alone). Keyboard-only END-TO-END *completion* of a
+  verification is exercised by the T3.4 sample-label browser run (DEFERRED), not this slice.
 
 ### T3.4 — Test labels  [TODO]
 - Generate/source sample labels (CONTEXT §5 fields) incl. one non-compliant warning,
