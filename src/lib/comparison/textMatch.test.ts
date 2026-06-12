@@ -14,15 +14,31 @@ describe('compareBrand', () => {
     expect(r.field).toBe('Brand');
   });
 
-  it("STONE'S THROW vs Stone's Throw -> review, not fail (formatting only)", () => {
+  // D1 (Steve, 2026-06-12): formatting-only differences are a clean match, not review.
+  it("STONE'S THROW vs Stone's Throw -> match (formatting only)", () => {
     const r = compareBrand("STONE'S THROW", "Stone's Throw");
-    expect(r.status).toBe('review');
-    expect(r.detail).toMatch(/formatting/i);
+    expect(r.status).toBe('match');
+    expect(r.detail).toMatch(/ignoring case/i);
   });
 
-  it('case-only difference -> review (never silent pass)', () => {
+  it('case-only difference -> match', () => {
     const r = compareBrand('old tom distillery', 'OLD TOM DISTILLERY');
-    expect(r.status).toBe('review');
+    expect(r.status).toBe('match');
+  });
+
+  it('accent-only difference (Crème vs Creme) -> match (é folds to e)', () => {
+    const r = compareBrand('Crème de Cassis', 'Creme de Cassis');
+    expect(r.status).toBe('match');
+    expect(r.detail).toMatch(/accent/i);
+  });
+
+  it('café vs cafe -> match', () => {
+    expect(compareBrand('Café Granita', 'Cafe Granita').status).toBe('match');
+  });
+
+  it('trailing/leading whitespace-only difference -> match', () => {
+    const r = compareBrand('OLD TOM DISTILLERY ', 'OLD TOM DISTILLERY');
+    expect(r.status).toBe('match');
   });
 
   it('tiny typo on a long string (>= 0.95) -> match', () => {
@@ -31,7 +47,7 @@ describe('compareBrand', () => {
     expect(r.status).toBe('match');
   });
 
-  it('moderate difference (0.80-0.95) -> review', () => {
+  it('moderate difference (0.80-0.95) -> review (still flagged)', () => {
     const r = compareBrand('Old Tom Distillery', 'Old Tom Distlry');
     expect(r.status).toBe('review');
   });
@@ -39,18 +55,6 @@ describe('compareBrand', () => {
   it('clearly different brands -> mismatch', () => {
     const r = compareBrand('OLD TOM DISTILLERY', 'JACK DANIELS');
     expect(r.status).toBe('mismatch');
-  });
-
-  it('accent-only difference (Crème vs Creme) -> review, not mismatch', () => {
-    const r = compareBrand('Crème de Cassis', 'Creme de Cassis');
-    expect(r.status).toBe('review');
-    expect(r.detail).toMatch(/formatting/i);
-  });
-
-  it('trailing/leading whitespace-only difference -> review (no silent pass)', () => {
-    const r = compareBrand('OLD TOM DISTILLERY ', 'OLD TOM DISTILLERY');
-    expect(r.status).toBe('review');
-    expect(r.detail).toMatch(/formatting/i);
   });
 
   it('nothing read -> missing', () => {
@@ -69,17 +73,25 @@ describe('compareClassType', () => {
     expect(r.field).toBe('Class/Type');
   });
 
-  it('punctuation/whitespace-only difference -> review', () => {
+  it('punctuation/whitespace-only difference -> match', () => {
     const r = compareClassType(
       'Kentucky Straight Bourbon Whiskey',
       'Kentucky Straight Bourbon Whiskey.',
     );
-    expect(r.status).toBe('review');
+    expect(r.status).toBe('match');
+  });
+
+  it('case-only difference -> match (COFFEE LIQUEUR vs Coffee Liqueur)', () => {
+    expect(compareClassType('Coffee Liqueur', 'COFFEE LIQUEUR').status).toBe('match');
   });
 
   it('reworded class/type -> mismatch', () => {
     const r = compareClassType('Kentucky Straight Bourbon Whiskey', 'London Dry Gin');
     expect(r.status).toBe('mismatch');
+  });
+
+  it('nothing read -> missing (parity with compareBrand)', () => {
+    expect(compareClassType('London Dry Gin', null).status).toBe('missing');
   });
 });
 
@@ -94,7 +106,7 @@ describe('compareTextField thresholds & shape', () => {
     const r = compareTextField('Brand', 'Foo Bar', 'Foo  Bar');
     expect(r.expected).toBe('Foo Bar');
     expect(r.found).toBe('Foo  Bar');
-    expect(r.status).toBe('review'); // whitespace-only -> formatting review
+    expect(r.status).toBe('match'); // whitespace-only -> clean match (D1)
   });
 
   it('uses the provided field name in the label and missing detail', () => {

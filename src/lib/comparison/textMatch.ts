@@ -8,10 +8,13 @@
  *   0.80 <= sim < 0.95  -> review   ("looks right, a human should glance")
  *   similarity < 0.80   -> mismatch
  *
- * Special rule (§3): when the strings are EQUAL only after normalization
- * (case / punctuation / possessive differences), the result is REVIEW with a
- * "matches except formatting" note — never a silent pass. This is the
- * Dave / "STONE'S THROW" human-in-the-loop case.
+ * Formatting-only rule (Steve decision 2026-06-12, BACKLOG D1): when the strings
+ * are EQUAL after normalization — i.e. they differ ONLY in case, punctuation,
+ * possessives, accents (é -> e), or whitespace — brand and class/type resolve to
+ * a clean `match` (not `review`). The "STONE'S THROW" vs "Stone's Throw" and
+ * "Café" vs "Cafe" cases are the same product, so flagging them for human review
+ * was noise. Genuinely uncertain cases (similarity 0.80–0.95) still go to
+ * `review`; only an exact-after-normalization equality is auto-matched here.
  */
 import type { FieldResult } from '@/types';
 import { normalizeText, similarityRatio } from './normalize';
@@ -42,8 +45,7 @@ export function compareTextField(
     };
   }
 
-  // Exact raw match (incl. identical whitespace) -> unambiguous pass. Any
-  // whitespace-only delta falls through to the formatting-review branch below.
+  // Exact raw match (incl. identical whitespace) -> unambiguous pass.
   if (expected === found) {
     return { field, expected, found, status: 'match', detail: 'Exact match.' };
   }
@@ -51,14 +53,16 @@ export function compareTextField(
   const ne = normalizeText(expectedTrim);
   const nf = normalizeText(foundTrim);
 
-  // Equal only after normalization -> formatting-only difference -> review.
+  // Equal after normalization -> the difference is ONLY case / punctuation /
+  // possessive / accent / whitespace. Per the D1 decision these are the same
+  // value, so resolve to a clean match (with a note on what was ignored).
   if (ne === nf) {
     return {
       field,
       expected,
       found,
-      status: 'review',
-      detail: 'Matches except for formatting (case/punctuation) — please confirm.',
+      status: 'match',
+      detail: 'Matches (ignoring case, punctuation, and accents).',
     };
   }
 
