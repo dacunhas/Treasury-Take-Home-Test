@@ -441,3 +441,20 @@ Audited the diff: `src/lib/ui/imageConstraints.ts` (new), `src/lib/ui/validateFo
   provider routing becomes user-selectable.
 - An empty `image.type` falls into the "type not supported" branch rather than a presence
   message. Acceptable UX.
+
+
+---
+
+## 2026-06-11 (interactive) — M5 / T5.2 latency + model lock
+
+**Verdict: clean. Latency root-caused and fixed; primary model locked to
+gemini-3.1-flash-lite. No BLOCKER/MAJOR.**
+
+- **Secrets:** the per-request `__model` benchmark hook (allow-listed, diagnostic) was
+  REMOVED before locking — no request-controlled model selection ships to prod.
+- **`thinkingLevel`/`rawText`/model/timeout** are all pure config or schema changes;
+  comparison engine untouched; 211/211 green; tsc + lint clean.
+- **Diagnostic logging** from the earlier PR retained (secret-free `console.error` of
+  ExtractionError code + provider status) — valuable for prod debugging; no key leak.
+- **Note:** flash-lite is a lighter model; recommend a one-off blurry-image check that
+  confidence falls below threshold so the Sonnet escalation fires (logged to BACKLOG).

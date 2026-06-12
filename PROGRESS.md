@@ -4,6 +4,46 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-11 (interactive, w/ Steve) — M5 / T5.2 latency: model lock = gemini-3.1-flash-lite
+
+**Context:** first live extraction calls after deploy failed; diagnosed end-to-end on
+the production URL (logging added in a prior PR surfaced the provider status).
+
+**Root-cause chain (each fixed + redeployed):**
+1. `gemini-2.0-flash` was RETIRED by Google 2026-06-01 → every call 404'd with a valid
+   key. (The friendly UI message had hidden this; route diagnostics exposed `status 404`.)
+2. Gemini 3.x default "thinking" (level "medium") dominated latency → pinned
+   `thinkingLevel='low'` (env `GEMINI_THINKING_LEVEL`). ~7.6s → 6.6s.
+3. `rawText` (full-label transcription) was requested but consumed by nothing → removed
+   from the response schema + Sonnet prompt. 6.6s → ~4.5s on a real photo.
+4. Client-side image downscaling to ~1568px (`imageResize.ts`) — free on accuracy
+   (model downsamples internally), trims upload + processing, kills heavy-image timeouts.
+5. Raised the Flash abort 4s → 9s (env `GEMINI_TIMEOUT_MS`) so legitimate dense photos
+   aren't aborted mid-read.
+
+**Benchmark (live URL, 1568px label, 3 runs each, server `latencyMs`):**
+- gemini-3.5-flash:      3.28 / 2.69 / 2.68 s  (avg ~2.9s)
+- gemini-3.1-flash-lite: 1.45 / 1.28 / 1.53 s  (avg ~1.4s)
+Both: brand match, ABV match, **Government Warning exact-match** — identical accuracy on a
+clear label. **Decision (Steve): lock `gemini-3.1-flash-lite`** as the primary fast tier
+(~1.4s, ~3.5s SLA headroom for cold starts); Sonnet stays the confidence-triggered deep
+tier for blurry/low-confidence images (spec tolerates 5–7s on the escalated path).
+
+**This slice:** default model → `gemini-3.1-flash-lite` (env-overridable); removed the
+diagnostic per-request `__model` benchmark hook (not for prod). 211/211 green; tsc + lint
+clean. T5.2 marked DONE.
+
+**Observed accuracy findings (logged to BACKLOG, not blocking):** extraction was 100%
+correct on a real Kendall-Jackson photo; the "Needs review" flags came from strict
+EXPECTED-value parsing (`13`, `750` without units) + the intentional case-only→review
+rule — an engine-tuning slice, not extraction error.
+
+**Next on critical path:** validate flash-lite confidence on a blurry image (escalation
+fires), M3 T3.3 accessibility + T3.4 sample labels, M5 T5.1 README/approach doc, T5.3
+deploy smoke-test. **Blockers:** none.
+
+---
+
 ## 2026-06-11 (overnight run) — M3 / T3.2 error handling
 
 **Slice built:** T3.2 — single-label error handling / preflight validation. Strict-next
