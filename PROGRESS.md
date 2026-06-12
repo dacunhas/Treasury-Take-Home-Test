@@ -1119,3 +1119,41 @@ T5.3 deploy).
 RESOLVED. docs/APPROACH.md §10 limitation updated (14.2.35 + residual-advisory note).
 
 **Blockers:** none. PR off `main` (branch `agent/m5-next-security-bump`).
+
+---
+
+## 2026-06-12 (evening run) — T5.4/A2: missing-key -> friendly 503 at the /api/verify boundary (testable)
+
+**Slice:** Priority-A release-blocker A2. Made the route's error->HTTP mapping a pure,
+unit-tested function so the "UI never sees a config stack trace" guarantee is provable.
+
+**What changed**
+- NEW `src/app/api/verify/errorMap.ts` — pure `mapVerifyError(err)` returning
+  `{ status, body: { error }, log? }`. Maps `VerifyValidationError`->400 (no log),
+  `MissingConfigError`->friendly **503**, `ExtractionError`->502 (`input`=image msg / else
+  retry msg), anything else->500. No I/O, no logging inside (caller logs `log`).
+- MODIFIED `src/app/api/verify/route.ts` — now a thin adapter: it calls `mapVerifyError(err)`,
+  logs the secret-free `log` line if present, and returns the friendly JSON body + status.
+  Dropped the now-unused `ExtractionError` / `MissingConfigError` / `VerifyValidationError`
+  imports. Behavior is byte-identical to the prior inline mapping (verified by the auditor).
+- NEW `src/app/api/verify/errorMap.test.ts` — 11 tests: missing-key (both keys) -> 503 friendly
+  JSON; key NAME / "Missing required environment variable" / ".env.local" absent from body AND
+  log; config error NOT collapsed into a 502 "photo" message; 400/502/500/non-Error paths;
+  no multi-line/stack-like client message.
+
+**Design decision (logged):** A2's prose said "friendly *ExtractionError*", but a missing API key
+is a SERVER misconfiguration, not an extraction failure. Collapsing it into a 502 "upload a better
+photo" would mislead the agent about a problem only an admin can fix, so it stays a 503
+"not configured — contact support". Compliance confirmed this honors intent (acceptance bar's
+real words: "missing-key path returns the friendly 503 JSON").
+
+**Gate:** 284/284 vitest (273 + 11 new), `tsc --noEmit` clean, `next lint` 0 warnings,
+`next build` clean.
+
+**Reviews:** auditor CLEAN (no BLOCKER/MAJOR; 2 NITs — 1 logged as BACKLOG C5, 1 cosmetic cast
+note, no action); compliance RELEASABLE (all criteria PASS, zero FAIL).
+
+**Status flips:** BUILD_BACKLOG T5.4/A2 -> DONE. All Priority-A release-blockers (A1, A2) now
+clear -> the only remaining critical-path item before submission is T5.3 (human deploy checkpoint).
+
+**Blockers:** none. PR off `main` (branch `agent/m5-a2-config-error-boundary`).

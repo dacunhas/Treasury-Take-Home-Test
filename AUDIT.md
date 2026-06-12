@@ -727,3 +727,28 @@ switch exhaustiveness. → Resolves the "warning always shows Needs review" repo
   and desirable for reproducibility.
 
 **No BLOCKER, no MAJOR. Verdict: APPROVE.**
+
+---
+
+## 2026-06-12 (evening run) — T5.4/A2 (errorMap: missing-key -> friendly 503)
+
+Scope: NEW `errorMap.ts` + `errorMap.test.ts`; MODIFIED `route.ts` (delegates mapping). Read-only review of the diff vs `main`.
+
+- **Behavior parity — PASS.** `mapVerifyError` reproduces the prior inline mapping byte-for-byte:
+  400 validation, 503 missing-key (hardcoded body + identical log string), 502 extraction
+  (`input` vs other ternary + `code=/detail=` log), 500 unknown (`?? 'Error'` / `?? String(err)`
+  fallbacks). 405 GET + 400 bad-multipart left untouched in `route.ts` (no thrown error to map).
+- **Secret leakage — PASS.** `MissingConfigError.message` contains the key name (`config.ts:13`),
+  but the 503 path reads neither `err.message` (body + log are literals); tests pin both exclude
+  the key name / config text. 502/500 log `err.message`, which carries no env-key name.
+- **Purity — PASS.** No `console.*`/I/O/`await` in `mapVerifyError`; `route.ts` does the single
+  `console.error`. Synchronous — no 5s-budget risk.
+- **Mis-map/uncaught — PASS.** `MissingConfigError` checked before `ExtractionError`; `unknown`
+  fallback catches non-Error throws.
+- **Coverage — PASS.** All five branches + both ExtractionError arms + non-Error + stack-leak guard.
+
+NITs (non-blocking): (1) only `input`+`http` ExtractionError codes exercised — param-table over
+all six -> logged to BACKLOG **C5**. (2) `(err as Error)?.name` cast on a primitive throw is
+cosmetic. No action.
+
+**No BLOCKER, no MAJOR. Verdict: APPROVE.**

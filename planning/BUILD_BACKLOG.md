@@ -348,6 +348,14 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
 - A2 — Map a lazily-resolved `MissingConfigError` (missing key) to a friendly
   `ExtractionError` at the `/api/verify` route boundary so the UI never sees a config
   stack trace. *Accept:* missing-key path returns the friendly 503 JSON; test added.
+  **DONE 2026-06-12 (evening run).** Extracted the route's error->HTTP mapping into a pure,
+  unit-tested `mapVerifyError` (`src/app/api/verify/errorMap.ts`); `route.ts` is now a
+  thin adapter that delegates mapping + logs the secret-free `log` line. A lazily-resolved
+  `MissingConfigError` (missing GEMINI/ANTHROPIC key) maps to a friendly **503** JSON
+  ("not configured — contact support"), NOT a 502 ExtractionError (a server misconfig is
+  not a bad photo); the key NAME never reaches the client body or the server log. 11 new
+  tests (284/284 total green; tsc/lint/`next build` clean). Auditor CLEAN (no BLOCKER/MAJOR;
+  2 NITs); compliance RELEASABLE (all PASS). Unblocks T5.3 deploy.
 
 **Priority B — correctness/UX from real-label testing (Steve requests 6/11):**
 - B1 — Numeric ABV input + bare-number expected-parser tolerance (assume `%` for a
@@ -369,6 +377,10 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
   to lock the `>=` threshold semantics (textMatch). *Accept:* both boundaries tested.
 - C3 — Direct `compareClassType` missing/null test for parity with `compareBrand`.
 - C4 — `parseNetContents('750ML')` (unit-glued, upper-cased) regression test.
+- C5 — Param-table test over ALL `ExtractionError` codes in `mapVerifyError`
+  (`network|http|empty|input|timeout|unknown`): only `input` -> the image message, the
+  other five -> the retry message. Locks the 502 contract (auditor NIT, T5.4/A2 run; only
+  `input`+`http` currently exercised). *Accept:* all six codes asserted.
 
 **Priority D — decisions + doc-only (rationale folds into T5.1 README):**
 - D1 — Brand/class case-only difference (`kendall-jackson` vs `KENDALL-JACKSON`):
