@@ -147,6 +147,11 @@ Grouped by the PROJECT_PLAN §7 milestones.
 - **Accept:** test matrix — exact (pass); title-case prefix (fail); reworded (fail);
   missing (fail); shrunk-but-correct-text (pass on text, note formatting limit).
 
+- Refinement 2026-06-12: body letter-casing made `match` (was `review`) — body case is
+  not regulated (only the all-caps "GOVERNMENT WARNING" prefix + wording are). Fixes the
+  "warning always shows Needs review" report. Hard-fails (non-caps prefix / reworded /
+  missing) unchanged; bold/font-size caveat retained. (auditor APPROVE, compliance PASS.)
+
 ### T2.5 — Aggregate verdict  [DONE 2026-06-11]
 - Combine field + warning results into overall `pass / review / fail`.
 - **Accept:** any FAIL → fail; any REVIEW and no FAIL → review; else pass.

@@ -563,3 +563,23 @@ in-tree 2-arg caller breaks; `aggregate.ts` now passes `expected.beverageType`
 ### Resolves
 **Closes the open T2.3 AUDIT MAJOR (M2)** — "net-contents not beverage-type-aware."
 Threaded end-to-end; test-covered; conservative default preserved. → Resolved.
+
+---
+
+## 2026-06-12 (interactive) — M2/T2.4 Government Warning body-casing -> match
+
+**Verdict: APPROVE. No BLOCKER/MAJOR/MINOR. 2 NIT (1 cosmetic header note fixed in-run).**
+
+Audited `warning.ts` + `warning.test.ts`. Engine still pure/deterministic/I-O-free.
+The ONLY logic change: the `caseInsensitiveEqual && prefixCaps` branch goes
+`review` -> `match` (body letter-casing is unregulated; the old gate fired "needs
+review" on virtually every real, often ALL-CAPS, label). All other verdicts byte-
+identical: missing -> `missing`; non-caps prefix -> `mismatch`; reworded/extra/clause-
+dropped -> `mismatch` + diff; exact -> `match`. The new branch is gated on a WHOLE-
+STRING case-insensitive equality, so no reworded/missing-clause/punctuation-altered
+text can reach it. `textMatch:false` retained on the relaxed pass; only consumer
+(`aggregate.warningSeverity`) switches on `status`, not `textMatch` — rolls up to
+`pass` correctly. Honest bold/font-size caveat still appended. 14/14 warning tests
+(234/234 total); tsc/lint/build clean. NIT (header "byte-for-byte" wording) fixed
+in-run. NIT (`warningSeverity` 'review' arm now unreachable via warnings) left for
+switch exhaustiveness. → Resolves the "warning always shows Needs review" report.

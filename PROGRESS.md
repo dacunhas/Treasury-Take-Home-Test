@@ -857,3 +857,25 @@ open MAJOR before touching batch (M4). Next strict-order TODO is M4/T4.1 (batch)
 slip-rule cut line — or M5/T5.1 (README/approach doc) on the critical path.
 
 **Blockers:** none.
+
+---
+
+## 2026-06-12 (interactive) — M2/T2.4 Government Warning body-casing -> match
+
+**Trigger:** Steve reported the warning check ALWAYS returned "Needs review" on real
+labels — the body-casing branch fired on every label whose body case differed from the
+stored canonical (common ALL-CAPS panels), making the check non-useful.
+
+**Root cause + fix:** body letter-casing is not regulated (27 CFR Part 16 mandates caps
++bold only for the "GOVERNMENT WARNING" prefix). `warning.ts` — the
+`caseInsensitiveEqual && prefixCaps` branch now returns `status: 'match'` (was
+`'review'`) with a detail stating body case differs but is acceptable, plus the standing
+bold/font-size caveat. All hard-fail paths unchanged (non-caps prefix, reworded, extra,
+missing). `textMatch` stays false on this pass (not byte-exact); aggregate rolls up on
+`status`. +1 net test (incl. a full ALL-CAPS label -> match); 234/234 green; tsc/lint/
+build clean.
+
+**Reviews:** auditor APPROVE (no BLOCKER/MAJOR/MINOR; 1 header NIT fixed in-run),
+compliance PASS. No non-compliant warning can reach `match`.
+
+**Blockers:** none. PR off `main` (branch `agent/m2-warning-body-casing-match`).

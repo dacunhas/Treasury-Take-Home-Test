@@ -579,3 +579,25 @@ CONTEXT §5 (measurement-system rule) + PROJECT_PLAN §3/§8.
 **RESOLVES the carried net-contents beverage-type item** (BUILD_BACKLOG "Carry-over",
 T2.3 AUDIT MAJOR M2). Upgrades the prior conservative `review` default to the full
 conditional with no regression in the assist-not-adjudicate guarantee. **Overall: PASS.**
+
+---
+
+## 2026-06-12 (interactive) — M2/T2.4 Government Warning body-casing -> match — PASS
+
+A warning matching the canonical word-for-word (case-insensitive) with an all-caps
+"GOVERNMENT WARNING" prefix now returns `match` instead of `review` when only BODY
+letter-casing differs.
+
+- Compliance-correct: 27 CFR Part 16 / CONTEXT §5 mandate caps (+bold) ONLY for the
+  "GOVERNMENT WARNING" prefix; body letter-case is NOT regulated. The old `review`
+  gated on something the rule doesn't require, forcing false "needs review" on common
+  ALL-CAPS warning panels. **PASS**
+- Hard-fails preserved: non-caps prefix -> `mismatch`; reworded/short/extra -> `mismatch`
+  + diff; missing -> `missing`. New branch is narrowly gated (wording identical modulo
+  case AND prefix all-caps), so it widens no failure path. **PASS**
+- Assist-not-adjudicate intact: passing detail still carries the honest "bold/font-size
+  cannot be confirmed from text — eyeball it" caveat + states body case is acceptable.
+  **PASS**
+- Consistent with PROJECT_PLAN §8 / T2.4 ("correct text passes on text, note the
+  formatting limit"). Residual bold-not-verifiable exposure is pre-existing and
+  disclosed, not introduced here. **Overall: PASS.**

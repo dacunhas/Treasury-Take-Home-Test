@@ -6,8 +6,11 @@
  * The check answers four things and folds them into one FieldStatus:
  *   present     — is there a warning block at all?            (missing -> fail)
  *   prefixCaps  — is "GOVERNMENT WARNING" present and UPPERCASE?
- *   textMatch   — does the full statement equal the canonical text
- *                 (whitespace-normalized, word-for-word, case-sensitive)?
+ *   textMatch   — does the full statement equal the canonical text EXACTLY
+ *                 (whitespace-normalized, case-sensitive)? Note: this strict flag
+ *                 stays false when only BODY letter-casing differs, yet the verdict
+ *                 is still `match` — body case is not regulated; only the all-caps
+ *                 "GOVERNMENT WARNING" prefix and the wording are required.
  *   diff        — a readable word-level diff vs canonical when it doesn't match.
  *
  * Honesty note (CONTEXT §5): caps + wording ARE detectable from extracted text;
@@ -153,16 +156,23 @@ export function checkGovernmentWarning(
   }
 
   if (caseInsensitiveEqual && prefixCaps) {
-    // Prefix is fine and every word matches; only some body casing differs.
-    // A human should glance, but this is not a reworded/missing-text failure.
+    // Prefix is uppercase and every word matches; only body letter-casing differs
+    // (e.g. a label that prints the whole statement in ALL CAPS). Body case is NOT
+    // regulated — 27 CFR Part 16 mandates only that "GOVERNMENT WARNING" be in
+    // capital letters (and bold); the statement itself need only appear
+    // word-for-word and legibly. So this is a clean PASS, not a review — gating on
+    // body case made the check fire "needs review" on virtually every real label.
+    // The standing honest caveat (bold / font-size unverifiable from text) remains.
     return {
       present: true,
       prefixCaps: true,
       textMatch: false,
-      status: 'review',
+      status: 'match',
       detail:
-        'All required words are present and the prefix is capitalized; only ' +
-        `letter-casing in the body differs — please confirm. ${FONT_NOTE}`,
+        'Matches the required Government Warning word-for-word, with ' +
+        '"GOVERNMENT WARNING" capitalized. Body letter-casing differs from the ' +
+        'reference text, which is acceptable (only the "GOVERNMENT WARNING" ' +
+        `prefix must be capitalized). ${FONT_NOTE}`,
     };
   }
 
