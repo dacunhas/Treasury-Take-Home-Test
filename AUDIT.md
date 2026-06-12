@@ -821,3 +821,18 @@ all six -> logged to BACKLOG **C5**. (2) `(err as Error)?.name` cast on a primit
 cosmetic. No action.
 
 **No BLOCKER, no MAJOR. Verdict: APPROVE.**
+
+---
+
+## 2026-06-12 (audit run) — pre-submission §8 audit fix: .gitignore `.env*` coverage
+
+**Finding (hard-FAIL item, §8 code-quality):** `.gitignore` on `main` never ignored
+`.env`/`.env.local` (`git check-ignore .env.local` → not ignored). No secret was
+committed (tree grep clean for `github_pat_`/`ghp_`/`AIza`/`sk-ant`; no `.env*` tracked
+except `.env.example`), but the README quick start instructs users to create `.env.local`
+with real keys in an unprotected path. The M0 audit's described `.env*` block was never in
+any committed `.gitignore`; a truncated comment line marks where it was likely lost.
+
+**Fix (this branch):** added `.env*` + `!.env.example` to `.gitignore`; repaired the
+truncated comment. Verified: `.env.local`/`.env` now ignored, `.env.example` still
+tracked. Full gate re-run green.

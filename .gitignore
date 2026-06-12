@@ -30,7 +30,11 @@ github-pat.txt
 # large / personal reference exports — keep out of the repo
 *.pdf
 
-# leftover sandbox test artifacts (cannot be del
+# leftover sandbox test artifacts (cannot be deleted from some sandboxes)
 # next.js / typescript generated artifacts
 next-env.d.ts
 *.tsbuildinfo
+
+# env files — real keys live in .env.local; never commit them (.env.example is the template)
+.env*
+!.env.example
