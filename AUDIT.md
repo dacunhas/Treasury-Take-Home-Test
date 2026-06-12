@@ -5,6 +5,48 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-12 — M4/T4.1 Batch input + processing
+
+**Verdict: SHIP-READY. No BLOCKER/MAJOR.** Pure core (csv/match/process/fields)
+deterministic & I/O-free, well-tested; the React glue is thin and reuses the server
+boundary correctly. 26/26 batch tests pass; scoped `tsc` clean.
+
+### Verified clean
+- **Per-row isolation (T4.1 acceptance):** `process.ts` wraps the injected `verifyRow`
+  in try/catch (rejection -> `error` outcome, batch continues); invalid/unmatched rows
+  short-circuit to `error` with no model call. Tested.
+- **Concurrency pool is order-stable:** outcomes written by index, not push order; pool
+  sized `min(limit,total)`; empty input -> `[]`. Tested with shuffled delays. No
+  off-by-one.
+- **CSV tokenizer:** quotes / embedded commas / `""` escapes / CRLF-LF / blank-line skip /
+  any-order alias headers — correct + tested.
+- **Image matching:** case-insensitive basename, dir-prefix strip (`/` and `\`), ext-less
+  stem fallback, shared-image (non-consuming) + `unusedFiles`, friendly per-row error.
+- **Security / boundary:** no secrets, no stack traces surfaced; verifier POSTs to
+  `/api/verify` (server stays the extraction boundary); core never imports extractor/
+  fetch/DOM (generic over `F`); no PII persisted (in-memory Files only).
+- **Conditional ABV (CONTEXT §5):** blank ABV is not a row error; `toVerifyFields` passes
+  `abv` (incl. '') verbatim. Tested.
+- **Accessibility glue:** `<label htmlFor>` on every control; `<progress>` + `role=status`;
+  table `<caption>`/scoped `<th>`; status = word + glyph (not colour alone); WAI-ARIA tabs
+  (roving tabindex, Arrow/Home/End).
+
+### MINOR / NIT — FIXED in-run
+- `BatchForm.tsx` hardcoded the AA hex literals (`#0f5d2a`/`#8a1c1c`) instead of importing
+  the contrast-test-guarded tokens, so `contrast.test.ts` covered them only by copy. **FIXED:**
+  `statusPresentation` now derives from `overallPresentation`/`fieldStatusPresentation`.
+- `csv.ts` `sawAnyChar` was a dead branch (the `text.trim()===''` guard already handles
+  empty input). **FIXED:** removed; flush simplified.
+
+### MINOR — logged to BACKLOG (T4.2; not gold-plated)
+- `BatchForm` keys the upload map by `File.name`, so two different files sharing a basename
+  collide — surface a "two images share the name X" notice.
+- `csv.ts` duplicate header columns are silently first-wins — warn or document.
+- Fixed concurrency (3) with no cancel — consider a Cancel control / tunable pool for
+  200-300-row imports. None is a correctness bug; the per-row core is sound.
+
+---
+
 ## 2026-06-12 — M5/T5.1 README + approach/assumptions doc
 
 **Verdict: no BLOCKER. 1 MAJOR + 1 MINOR + 1 NIT — all FIXED in-run. Docs-only slice.**

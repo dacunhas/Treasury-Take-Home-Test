@@ -237,15 +237,34 @@ Grouped by the PROJECT_PLAN §7 milestones.
 
 ## M4 — Batch mode (Sat 6/13)  *(cut line if behind — see slip rule)*
 
-### T4.1 — Batch input + processing  [TODO]
+### T4.1 — Batch input + processing  [DONE 2026-06-12]
 - CSV of expected values (+ beverage type) + multi-image upload; match by filename
   or column; process with progress; per-row error isolation.
 - **Accept:** a multi-row CSV + images produces a results table; one bad row doesn't
   fail the batch.
+- Done: pure, unit-tested batch core in `src/lib/batch/` — `csv.ts` (RFC-4180-style
+  parser + per-row, non-fatal validation; any-order alias headers; ABV optional per
+  §5), `match.ts` (filename/column matching: case-insensitive basename, ext-less stem
+  fallback, dir-prefix strip, shared-image + `unusedFiles`), `process.ts`
+  (`runBatch` with PER-ROW try/catch isolation — one bad row never fails the batch —
+  a bounded concurrency pool that preserves row order, and `onProgress`), `fields.ts`
+  (row->`/api/verify` field map, blank-ABV passthrough). UI: `BatchForm.tsx` (CSV +
+  multi-image inputs, progress bar, results table; verifier POSTs each row to the
+  existing stateless `/api/verify`, reusing the single-label core) + `AppTabs.tsx`
+  (accessible WAI-ARIA Single/Batch tab switch). 26 new batch tests; 260/260 total
+  green; scoped `tsc --noEmit` clean (degraded env — see PROGRESS). Auditor: no
+  BLOCKER/MAJOR (shared color-token + dead-branch nits fixed in-run). Compliance: PASS
+  on all 8 in-scope criteria; T4.2 (sort/detail/export) correctly DEFERRED.
 
 ### T4.2 — Batch results table + export  [TODO]
 - Sortable results table; row → detail; CSV export of results.
 - **Accept:** export downloads; row detail matches single-label output.
+- Carry-overs from the T4.1 review (address here): (a) MINOR — `BatchForm` keys the
+  upload map by `File.name`, so two different files with the same basename collide;
+  surface a gentle "two images share the name X" notice. (b) MINOR — `csv.ts`
+  duplicate header columns are first-wins silently; warn or document. (c) MINOR —
+  batch concurrency is a fixed 3 with no cancel; consider a Cancel control / tunable
+  pool for 200-300-row imports. None is a correctness bug (per-row core is sound).
 
 ---
 

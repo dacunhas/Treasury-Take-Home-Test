@@ -5,6 +5,43 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-12 — M4/T4.1 Batch input + processing
+
+**Overall: PASS on all 8 in-scope criteria.** T4.2 concerns (sort, row-detail, export)
+are correctly DEFERRED in-code, not gaps. 26/26 batch tests green.
+
+1. **Batch input — CSV (+ beverage type) + multi-image upload — PASS.** `parseBatchCsv`
+   reads all fields via case-insensitive alias headers, any order, RFC-4180 tokenizer;
+   `BatchForm` has labelled CSV (`.csv`) + `multiple` image inputs.
+2. **Match by filename or column — PASS.** `matchRowsToFiles` resolves the image column
+   against uploaded filenames (basename, ext-less stem, dir-strip); shared images allowed;
+   `unusedFiles` surfaced.
+3. **Progress + per-row error isolation — PASS (headline T4.1 acceptance).** `runBatch`
+   isolates each row (rejection -> `error`, batch continues), short-circuits invalid rows,
+   bounded order-stable pool, `onProgress` per settled row. Directly tested.
+4. **Produces a results table — PASS.** Row/Brand/Image/Result/Detail table + tally line.
+5. **Conditional ABV by beverage type preserved — PASS.** Blank ABV is not a row error;
+   `toVerifyFields` passes it verbatim to the unchanged engine via `/api/verify`; a
+   compliant beer/table-wine row is not wrongly failed by the batch layer. Tested.
+6. **Accessibility (CONTEXT §2) — PASS.** Labels tied to inputs; WAI-ARIA tabs with
+   keyboard nav; status by word + glyph, never colour alone; table caption + scoped
+   headers; focus-managed results; `role=alert` errors. (Status colours now bound to the
+   AA-verified `format.ts` tokens per the in-run fix.)
+7. **Stateless / no-PII — PASS.** No storage/cookies/fs; images in an in-memory Map;
+   reuses the stateless `/api/verify`.
+8. **Human-in-the-loop framing — PASS.** Flags only (`pass/review/fail/error` ->
+   plain-language); verdict logic stays in the reused engine; header restates "does not
+   make compliance decisions."
+
+### Correctly DEFERRED (T4.2 — not FAIL)
+- Sortable columns; row -> detail drilldown; CSV export of results.
+
+### Open items to close before submission
+- [ ] T4.2 lands sort/detail/export + the three T4.1 review MINORs (dup-filename notice,
+      dup-header warning, cancel/tunable concurrency).
+
+---
+
 ## 2026-06-12 — M5/T5.1 README + approach/assumptions doc
 
 **Overall: PASS** on all 8 in-scope criteria. Satisfies the PROJECT_PLAN §8 "Attention to

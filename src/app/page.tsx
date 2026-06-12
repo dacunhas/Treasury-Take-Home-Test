@@ -1,8 +1,8 @@
-import VerifyForm from '@/components/VerifyForm';
+import AppTabs from '@/components/AppTabs';
 
 /**
- * Single-label verification screen (T3.1). Server component shell that renders
- * the client `VerifyForm`. Batch mode (M4) will be added as a second tab/route.
+ * Verification screen. Server component shell that renders the client `AppTabs`
+ * (the Single / Batch mode switch — T3.1 single-label, T4.1 batch).
  *
  * `<main id="main-content" tabIndex={-1}>` is the skip-link target (T3.3): a
  * single, programmatically focusable landmark so keyboard and screen-reader
@@ -29,7 +29,7 @@ export default function HomePage() {
           compliance decisions.
         </p>
       </header>
-      <VerifyForm />
+      <AppTabs />
     </main>
   );
 }
