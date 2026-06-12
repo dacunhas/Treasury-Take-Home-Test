@@ -727,3 +727,27 @@ letter-casing differs.
 
 **Verdict: RELEASABLE.** Does NOT block the T5.3 deploy — it unblocks it (closes the M5/A1
 release-blocker). Zero FAIL.
+
+---
+
+## 2026-06-12 (evening run) — T5.4/A2 (missing-key -> friendly 503 boundary)
+
+Scope: pure `mapVerifyError` extracted from `route.ts` + tests. Mapped to PROJECT_PLAN §5/§8
+(error handling) and CONTEXT §3 (no-secret-leak).
+
+- **§8 "every error path returns a friendly message, never a crash/stack trace" — PASS.** All
+  branches return a friendly `{error}` string; non-Error throw -> 500; client messages asserted
+  free of newline / "    at " (no stack leakage).
+- **§5 validation-before-model — PASS.** `VerifyValidationError`->400, no log; validation precedes
+  extraction.
+- **§5 model/network failure -> friendly retry — PASS.** non-`input` `ExtractionError`->502 retry.
+- **§5/§8 unreadable image -> "request a better image" — PASS.** `input`->"upload a clear PNG, JPEG,
+  or WebP".
+- **CONTEXT §3 no-secret-leak — PASS.** Missing-key path substitutes hardcoded message + log;
+  key name never reaches client or log (4 explicit assertions).
+- **CONTEXT §3 stateless — PASS (unaffected).** Pure function, no persistence.
+- **"friendly ExtractionError" interpretation — PASS.** 503 server-misconfig (not 502 "bad photo")
+  honors intent; design note + regression test pin it.
+- **Acceptance: test added — PASS.** 11 tests incl. the missing-key 503.
+
+**Verdict: RELEASABLE.** Zero FAIL. Unblocks T5.3 (all Priority-A release-blockers now clear).
