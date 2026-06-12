@@ -211,10 +211,22 @@ Grouped by the PROJECT_PLAN §7 milestones.
   glyph+word everywhere (never colour alone). Keyboard-only END-TO-END *completion* of a
   verification is exercised by the T3.4 sample-label browser run (DEFERRED), not this slice.
 
-### T3.4 — Test labels  [TODO]
+### T3.4 — Test labels  [DONE 2026-06-12]
 - Generate/source sample labels (CONTEXT §5 fields) incl. one non-compliant warning,
   one angled/glare photo, one beer (no ABV), one table wine.
 - **Accept:** labels committed to `samples/`; referenced in README demo steps.
+- Done: `samples/` holds 5 synthetic labels + a deterministic Pillow-only generator
+  (`generate_samples.py`, no numpy), `EXPECTED.csv` (expected COLA values + target
+  verdict per label, doubles as an M4 batch fixture), and `samples/README.md`
+  (per-label table + "How to demo" walkthrough). Coverage: (1) clean compliant
+  spirits = CONTEXT §5 sample; (2) non-compliant warning (title-case prefix +
+  reworded clauses -> warning FAIL + diff); (3) beer with NO ABV statement (optional
+  -> not failed); (4) `STONE'S THROW` table wine (tolerant-brand review + "Table
+  Wine" in lieu of numeric ABV); (5) #1 tilted+glare+blurred (Jenny bad-photo).
+  Compliant labels render the Government Warning **byte-identical** to
+  `src/lib/governmentWarning.ts` (auditor + compliance both re-verified the
+  283-char match). Top-level README adds a "Try it with the sample labels" section.
+  Pure-asset slice: no `src/` change; 226/226 tests, tsc, lint, `next build` green.
 
 ---
 

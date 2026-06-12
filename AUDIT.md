@@ -5,6 +5,43 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-12 — M3/T3.4 sample test labels
+
+**Verdict: content sound; canonical warning byte-identical. 1 NIT fixed in-run.
+No code defect (the "samples not committed" flag was just this run's pending commit).**
+
+Audited `samples/generate_samples.py`, the 5 PNGs, `EXPECTED.csv`, `samples/README.md`,
+and the `README.md` demo section. Pure local Pillow rendering — no secrets, no network,
+no exec; PNGs synthetic (not real-product photos); CSV well-formed (RFC quoting, 8 cols
+× 6 rows).
+
+### Verified clean
+- **Government Warning byte-match:** the generator's `CANONICAL_WARNING` is
+  character-for-character identical to `GOVERNMENT_WARNING_CANONICAL` in
+  `src/lib/governmentWarning.ts` (283 chars; compared programmatically). A real
+  verification of labels 1/3/4/5 passes the strict warning check.
+- **Bad warning genuinely non-compliant:** prefix `Government Warning:` not all-caps
+  AND both clauses reworded/shortened → warning `mismatch` → overall fail.
+- **EXPECTED.csv consistent with the real engine:** #1 pass; #2 fail (warning); #3 beer
+  blank-ABV → `match` (not failed) + `12 fl oz` vs `12 FL OZ (355 mL)` same-system match;
+  #4 `STONE'S THROW` → brand review, Table-Wine ABV not missing → overall review;
+  #5 pass (model-dependent, framed as such).
+- **Perspective math:** src→dst coefficient convention correct; degenerate-matrix path
+  guarded with a rotate fallback.
+
+### NIT — FIXED in-run
+- Generator imported `numpy` for the perspective solve while the docstring +
+  `samples/README.md` claimed "Pillow only." **Fix:** replaced numpy with a pure-Python
+  8×8 Gaussian-elimination solver (`_solve`); removed the import; re-ran the generator
+  **with numpy uninstalled** to prove the claim. All 5 PNGs + CSV regenerate; warp +
+  glare render correctly.
+
+### Note (not a defect)
+- The auditor's "BLOCKER: samples/ untracked" was the pre-commit working-tree state;
+  the slice is committed + pushed in this same run, satisfying T3.4's "committed to
+  samples/" acceptance.
+
+
 ## 2026-06-12 — M3/T3.3 Accessibility pass
 
 **Verdict: No BLOCKER/MAJOR. Slice is correct, secure, well-scoped. 3 NIT (2 fixed in-run).**

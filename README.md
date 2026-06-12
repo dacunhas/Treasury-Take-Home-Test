@@ -25,6 +25,16 @@ npm run typecheck
 npm run dev                  # http://localhost:3000
 ```
 
+## Try it with the sample labels
+
+Five ready-made sample labels live in [`samples/`](./samples/) — a clean spirits
+label, a non-compliant (reworded, title-case-prefix) Government Warning, a beer with
+no ABV statement, a `STONE'S THROW` table wine, and a tilted/glare bad-photo. Each
+row's expected values and target verdict are in
+[`samples/EXPECTED.csv`](./samples/EXPECTED.csv); see
+[`samples/README.md`](./samples/README.md) for the walkthrough. With the dev server
+running, enter a row's values, upload its PNG, and confirm the verdict matches.
+
 ## Posture
 
 - **Stateless / no-PII:** images and form data are processed in memory; nothing is
