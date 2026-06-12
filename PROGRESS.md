@@ -4,6 +4,69 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-12 (evening run) — T5.4 / B1 bare-number ABV tolerance
+
+**Slice built:** T5.4 epic, sub-item **B1** — numeric ABV input + bare-number
+expected-parser tolerance. Picked per the epic's priority order: the critical path,
+M4 batch, T5.1 docs, and Priority-A release-blockers (A1, A2) are all DONE/merged on
+`main`; T5.3 deploy is a human-only checkpoint (builder never deploys); B4 + D1 already
+merged. So the strict-next builder-actionable sub-item is B1 (Priority B, first open
+item). One slice only.
+
+**State on entry:** freshly-cloned `main` (HEAD `0bc374f`, PR #30 merged) is far ahead
+of the connected-folder `planning/*` copies (they still showed T1.3 as the last run);
+built off `main` per AGENTS.md §0. No open BLOCKER / FAIL.
+
+**What was built**
+- `src/lib/comparison/abv.ts` — `parseAbv` bare-number fallback: when no anchored/bare
+  `%` ABV is found AND the whole trimmed string is a plain number (`^\d+(\.\d+)?$`),
+  read it as that percentage (so an agent typing `13` instead of `13% Alc./Vol.`
+  compares correctly). Anchored `^...$` means it can never pull a digit out of a longer
+  string (proof, net contents, "Table Wine") — `90 Proof` still parses proof and derives
+  ABV exactly as before. A `<= 100%` clamp rejects an implausible bare value (a proof or
+  net-contents number mistyped into the field), which also stops the shared parser from
+  inventing a giant ABV from a stray big number on the found (extractor) side. Extracted
+  a `countDecimals()` helper (de-dups the percent + bare branches); decimal-precision
+  tracking is retained so the beer 0.1% flag still works on bare input.
+- `src/components/VerifyForm.tsx` — ABV `<input>` gains `inputMode="decimal"` (better
+  numeric keyboard, still `type="text"` so "45% Alc./Vol. (90 Proof)" is accepted) and
+  an ABV-scoped hint tied via `aria-describedby="beverageType-help abv-help"`: "In this
+  field a plain number is read as a percentage — enter 45 for 45% Alc./Vol., or type it
+  in full exactly as printed." Scoped to the ABV field on purpose (see compliance note).
+- `src/lib/comparison/abv.test.ts` — 12 new tests: parseAbv bare `13`/`45`/`13.5`,
+  whitespace, no-proof/no-wine flags, `90 Proof` still derives, embedded-number ignored
+  (`Lot 12345`->null), precision on bare `5.25`, the `<=100` clamp (`750`/`150`->null,
+  `100` accepted); compareAbv bare-expected match (`13` vs `13% Alc./Vol.`; `45` vs full
+  spirits statement), mismatch (13 vs 14), spirits bare-expected + no-label-ABV->mismatch.
+
+**Verification (sandbox /tmp clone, full `npm install`):** `tsc --noEmit` clean;
+`vitest run` **312/312 passing** (12 new); `next lint` 0 warnings; `next build` clean.
+No live model calls — `parseAbv` is pure; the a11y test renders statically.
+
+**Reviews:** code auditor = **CHANGES-REQUESTED** on first pass (1 MAJOR: shared parser's
+bare tolerance could touch the found side; 2 MINOR: no upper clamp, untested proof-ambiguous
+bare; 2 NIT: decimals duplication, hint/sample wording). Compliance = **RELEASABLE** (PASS
+on the acceptance bar + conditional-ABV preservation; one PARTIAL on the hint generalizing
+"a plain number is fine").
+**Self-triage (in-run):** added the `<= 100%` ABV clamp (neutralizes the MAJOR's stray-big-
+number concern on either side and the unclamped-large MINOR), de-duped the decimals math
+into `countDecimals()` (NIT), and scoped the form hint to the ABV field (compliance PARTIAL).
+Re-ran the full gate green (312/312). The auditor's "gate strictly to the input side" option
+was considered and deliberately not taken: a bare number in the extractor's `abv` field IS
+the label's stated ABV, so reading it (subject to the <=100 clamp) is more correct than
+dropping it to null; current found-side behavior is otherwise unchanged.
+
+**Open finding / next:** **B2** (net-contents NUMBER field + UNIT dropdown) is the strict-next
+sub-item — the backlog intended B1+B2 to ship together for form consistency. B1 shipped alone
+this run (kept the slice flawless + small per the slip rule); the consistency risk is held
+safe because the ABV hint is field-scoped and a unit-less net-contents value already routes to
+`review` (never a silent wrong pass). Logged to BACKLOG + COMPLIANCE for the B2 slice.
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
+
 ## 2026-06-12 (evening run) — M4 / T4.2 Batch results table + export
 
 **Slice built:** T4.2 — sortable batch results table, row→detail, CSV export. The

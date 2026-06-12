@@ -5,6 +5,47 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-12 (evening run) — T5.4 / B1 bare-number ABV tolerance
+
+**Overall: RELEASABLE (PASS).** B1 meets its acceptance bar, preserves the
+conditional-by-beverage-type ABV rules, and never wrongly fails (or wrongly passes) a
+compliant label. One UX-consistency item logged for the B2 slice (not a compliance gap).
+
+### 1. B1 acceptance — expected `13` compares to label `13% Alc./Vol.` — **PASS**
+`parseAbv('13') -> 13`; `compareAbv('13','13% Alc./Vol.','wine') -> match` (both
+test-pinned). Bare `45` vs a full spirits statement -> match; `13` vs `14` -> mismatch.
+
+### 2. Conditional ABV rules preserved (CONTEXT §5) — **PASS**
+The change is confined to `parseAbv`'s no-match fallback (reading the EXPECTED field); it
+adds no new label interpretation. `compareAbv`'s beverage-type branching is unchanged:
+spirits-required-but-label-absent still -> mismatch (test); beer-optional and Table/Light
+Wine substitution untouched; decimal precision retained so the beer 0.1% flag still fires
+on bare input. No path where a bare expected number wrongly passes or wrongly fails a
+compliant label. The `<= 100%` clamp keeps an implausible bare value from becoming an ABV.
+
+### 3. Accessibility / 73-year-old benchmark — **PASS** (PARTIAL on first pass, resolved)
+`inputMode="decimal"` + `aria-describedby` hint aid numeric entry. First-pass note: the
+hint generalized "a plain number is fine," which could teach bare-number safety that does
+NOT hold for net contents. **Resolved in-run:** hint reworded to be explicitly ABV-scoped
+("In this field a plain number is read as a percentage…") and is bound via
+`aria-describedby` to the ABV input only.
+
+### 4. Honesty / assist-tool framing — **PASS**
+"…or type it in full exactly as printed" keeps the printed label as the source of truth;
+the tolerance is a documented input ergonomic, not a silent normalization, and still yields
+Match / Needs Review / Mismatch for a human to decide.
+
+### B1-alone vs deferred B2 — coupling note (not a FAIL)
+The backlog intended B1+B2 to ship together. Shipping B1 alone creates no compliance hole:
+the ABV hint is field-scoped, and a unit-less net-contents value still routes to `review`
+(never a silent wrong pass) — worst case is an extra human review, not a false Match.
+
+### Open items to close before submission (logged for the B2 slice)
+- [ ] B2: net-contents NUMBER + UNIT dropdown; give net contents its own explicit-unit
+  affordance and regression-guard the unit-less -> `review` routing.
+
+---
+
 ## 2026-06-12 — M4/T4.2 Batch results table + export
 
 **Overall: PASS.** Every T4.2 acceptance + PROJECT_PLAN §8 batch criterion is met with

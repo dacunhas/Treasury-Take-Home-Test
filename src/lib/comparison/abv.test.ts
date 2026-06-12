@@ -161,3 +161,71 @@ describe('compareAbv — regression: unanchored percent', () => {
     expect(parseAbv(null).abv).toBeNull();
   });
 });
+
+describe('parseAbv — bare-number tolerance (B1)', () => {
+  it('reads a whole-string plain number as a percentage', () => {
+    expect(parseAbv('13').abv).toBe(13);
+    expect(parseAbv('45').abv).toBe(45);
+  });
+
+  it('reads a bare decimal number as a percentage', () => {
+    expect(parseAbv('13.5').abv).toBe(13.5);
+  });
+
+  it('ignores surrounding whitespace on a bare number', () => {
+    expect(parseAbv('  12  ').abv).toBe(12);
+  });
+
+  it('does not set proof or wine designations for a bare number', () => {
+    const p = parseAbv('13');
+    expect(p.proof).toBeNull();
+    expect(p.hasTableWine).toBe(false);
+    expect(p.usesAbvAbbrev).toBe(false);
+  });
+
+  it('still derives ABV from proof for a "NN Proof" string (no bare-number misfire)', () => {
+    const p = parseAbv('90 Proof');
+    expect(p.abv).toBeNull();
+    expect(p.proof).toBe(90);
+  });
+
+  it('does not treat a number embedded in a longer string as a bare ABV', () => {
+    // Net-contents-like noise must not be read as an ABV by the bare fallback.
+    expect(parseAbv('Lot 12345').abv).toBeNull();
+  });
+
+  it('tracks decimal precision for a bare number (beer 0.1% rule still applies)', () => {
+    expect(parseAbv('5.25').finerThanTenthPrecision).toBe(true);
+    expect(parseAbv('5.2').finerThanTenthPrecision).toBe(false);
+  });
+
+  it('rejects an implausible bare number above 100% (proof/net-contents mistyped)', () => {
+    // ABV cannot exceed 100%, so a bare "750" or "150" is not read as an ABV.
+    expect(parseAbv('750').abv).toBeNull();
+    expect(parseAbv('150').abv).toBeNull();
+    // The boundary value 100 is still accepted.
+    expect(parseAbv('100').abv).toBe(100);
+  });
+});
+
+describe('compareAbv — bare-number expected value (B1)', () => {
+  it('compares a bare expected "13" against a label "13% Alc./Vol." as a match', () => {
+    const r = compareAbv('13', '13% Alc./Vol.', 'wine');
+    expect(r.status).toBe('match');
+  });
+
+  it('compares a bare expected "45" against a full spirits statement as a match', () => {
+    const r = compareAbv('45', '45% Alc./Vol. (90 Proof)', 'spirits');
+    expect(r.status).toBe('match');
+  });
+
+  it('flags a mismatch when the bare expected number differs from the label', () => {
+    const r = compareAbv('13', '14% Alc./Vol.', 'wine');
+    expect(r.status).toBe('mismatch');
+  });
+
+  it('spirits with a bare expected number but no ABV on the label is a mismatch', () => {
+    const r = compareAbv('40', null, 'spirits');
+    expect(r.status).toBe('mismatch');
+  });
+});

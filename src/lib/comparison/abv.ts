@@ -26,6 +26,17 @@ function fmt(n: number): string {
   return String(Number(n.toFixed(2)));
 }
 
+/** Number of decimal places in a numeric string (e.g. "13.5" -> 1, "5" -> 0). */
+function countDecimals(numStr: string): number {
+  const dot = numStr.indexOf('.');
+  return dot === -1 ? 0 : numStr.length - dot - 1;
+}
+
+/** ABV is a percentage of volume — it cannot exceed 100%. Used to reject a bare
+ *  number that is clearly not an alcohol-content reading (a proof or net-contents
+ *  value mistyped into the field, e.g. "750"). */
+const MAX_PLAUSIBLE_ABV = 100;
+
 export interface AbvCompareOptions {
   /** Allowed absolute ABV difference (percentage points). Default 0.0 (exact). */
   tolerance?: number;
@@ -51,6 +62,13 @@ export interface ParsedAbv {
  * Parse an ABV/proof string. Tolerant of formats like
  *   "45% Alc./Vol. (90 Proof)", "5.0% ABV", "Table Wine", "13.5% alc/vol".
  * Returns the first numeric percentage found (excluding a "NN Proof" number).
+ *
+ * Bare-number tolerance (B1): if the WHOLE string is just a number — e.g. an
+ * agent types "13" in the ABV field rather than "13% Alc./Vol." — it is read as
+ * that percentage. The percent sign is assumed because the field's only meaning
+ * is an alcohol-content percentage. This only fires when nothing else parsed an
+ * ABV and the string is purely numeric, so it cannot steal a number out of a
+ * richer statement (a "90 Proof" string keeps deriving ABV from proof as before).
  */
 export function parseAbv(input: string | null): ParsedAbv {
   const text = (input ?? '').trim();
@@ -73,11 +91,30 @@ export function parseAbv(input: string | null): ParsedAbv {
   // which would wrongly fail a compliant label. Fall back to a bare percent.
   const ANCHORED = /(\d+(?:\.\d+)?)\s*%\s*(?:alc|alcohol|abv|a\.?\s*\/?\s*v)/i;
   const BARE = /(\d+(?:\.\d+)?)\s*%/;
+  // Whole-string plain number (no %, no other text) -> treat as a percentage (B1).
+  const BARE_NUMBER = /^(\d+(?:\.\d+)?)$/;
   const pctMatch = text.match(ANCHORED) ?? text.match(BARE);
   if (pctMatch && pctMatch[1] !== undefined) {
     abv = Number(pctMatch[1]);
-    const dot = pctMatch[1].indexOf('.');
-    abvDecimals = dot === -1 ? 0 : pctMatch[1].length - dot - 1;
+    abvDecimals = countDecimals(pctMatch[1]);
+  }
+
+  // Bare-number fallback (B1): no percent/anchored ABV was found, but the entire
+  // string is a plain number (e.g. the agent typed "13" or "13.5"). Read it as a
+  // percentage. Anchored to ^...$ so it never grabs a digit from a longer string
+  // (proof numbers, net contents, "Table Wine"), preserving every path above. A
+  // value above 100 is rejected (left as null) since ABV cannot exceed 100% —
+  // that guards against a proof or net-contents number typed into the ABV field,
+  // and means the shared parser never invents a giant ABV from a stray big number.
+  if (abv === null) {
+    const bareMatch = text.match(BARE_NUMBER);
+    if (bareMatch && bareMatch[1] !== undefined) {
+      const value = Number(bareMatch[1]);
+      if (value <= MAX_PLAUSIBLE_ABV) {
+        abv = value;
+        abvDecimals = countDecimals(bareMatch[1]);
+      }
+    }
   }
 
   return {
