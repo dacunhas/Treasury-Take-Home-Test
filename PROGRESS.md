@@ -4,6 +4,26 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-11 (interactive) — flash-lite blurry-escalation validation (de-risk model lock)
+
+Probed the live URL (now `gemini-3.1-flash-lite` default) with progressively degraded
+synthetic labels to confirm the confidence→escalation path:
+
+| Image | escalated | server latency | Gov Warning |
+|---|---|---|---|
+| clear              | no  | 1.9s | match |
+| mild blur (2px)    | no  | 1.8s | match |
+| heavy blur (4px)   | no  | 1.8s | match |
+| blur + low contrast| **yes → Sonnet** | 2.0s | match |
+
+**Result: escalation works.** The worst image crossed the threshold and escalated to the
+Sonnet deep tier, still completing in ~2s (huge SLA headroom). flash-lite read the
+Government Warning correctly even at heavy blur. Caveat: heavy-blur returned `fail`
+WITHOUT escalating — a possible "confidently wrong" lite-model case (safe direction, but
+a candidate to lower the confidence threshold slightly). Logged to BACKLOG. Model lock on
+flash-lite is de-risked for now; Steve will also try a real hard photo and can flip
+`GEMINI_MODEL` back to `gemini-3.5-flash` (zero code change) if a real case warrants it.
+
 ## 2026-06-11 (interactive, w/ Steve) — M5 / T5.2 latency: model lock = gemini-3.1-flash-lite
 
 **Context:** first live extraction calls after deploy failed; diagnosed end-to-end on

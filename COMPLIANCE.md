@@ -467,3 +467,17 @@ Jenny's "request a better image"); unknown→500. Matches PROJECT_PLAN §5.
   is a USABILITY gap, not a latency/SLA failure.
 - **Open before submission:** blurry-image escalation validation; deploy smoke-test
   (T5.3); README/approach doc (T5.1).
+
+
+---
+
+## 2026-06-11 (interactive) — escalation path validated (flash-lite)
+
+**Two-tier inference (Flash → conditional Sonnet → human): PASS (validated live).**
+Degraded-image probe: a blur+low-contrast label escalated to the Sonnet deep tier
+(`escalated=true`) while clear/moderately-blurred labels stayed on flash-lite — the
+conditional escalation fires on low confidence as specified. All cases stayed ~2s
+(escalated included), well inside the 5s SLA. Government Warning exact-match held across
+all blur levels. Open tuning item (BACKLOG): a heavy-blur case returned `fail` without
+escalating (possible confidently-wrong) — consider a slightly more eager confidence
+threshold; safe direction, not a failure.
