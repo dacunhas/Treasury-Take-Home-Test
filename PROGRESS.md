@@ -4,6 +4,62 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-12 (evening run ~6 PM ET) — M5 / T5.1 README + approach/assumptions doc
+
+**Slice built:** T5.1 — the README + approach/assumptions doc. On freshly-cloned `main`
+(HEAD PR #23) M0–M3 + T5.2 were all DONE; the remaining TODOs were T4.1/T4.2 (batch =
+the slip-rule **cut line**, off the critical path), **T5.1** (critical-path deliverable),
+T5.3 (deploy = human checkpoint), and the T5.4 cleanup epic. No open BLOCKER/MAJOR/FAIL
+on entry. Per the slip rule and the §6/§8 "done" definition, the README is a hard
+submission deliverable on the critical path, so T5.1 is the strict-next slice ahead of
+batch. The connected-folder `planning/*` copies still lagged many PRs (they showed only
+through T1.3) — built off `main` per AGENTS.md §0.
+
+**What was built (docs only — no `src/` change)**
+- `README.md` — rewritten from the M0 scaffold stub into a full doc: what it does +
+  Match/Review/Mismatch framing; quick start (Node 18+, `npm install`, mocked tests need
+  NO keys, `cp .env.example`, `npm run dev`); an env-var table (incl. the optional
+  `GEMINI_MODEL`/`GEMINI_TIMEOUT_MS`/`GEMINI_THINKING_LEVEL` overrides); the sample-label
+  table; an architecture diagram + `LabelExtractor` firewall seam; project layout; scripts;
+  deploy notes; and the stateless/no-PII posture.
+- `docs/APPROACH.md` — new approach/tools/assumptions doc: problem restatement; guiding
+  principles (assist-not-adjudicate, defensible correctness, 5s SLA, accessibility); the
+  two-tier inference + swappable/local-OCR seam; the pure comparison engine (thresholds,
+  conditional ABV, strict warning + diff); UX/a11y; error handling; tools/stack;
+  assumptions; out-of-scope; and a candid limitations list (bold/font not OCR-detectable,
+  beer-ABV conditional edge, `next@14.2.5` advisory, threshold tuning).
+- `.env.example` — added the three optional Gemini override vars (commented).
+
+**Verification:** docs-only slice, zero `src/` change, so the unit suite is unaffected
+(last green on `main`: 226/226; static src count 234 — phrased as "220+ tests" in the docs
+since the suite could not be re-run this session — see degraded-validation note). Internal
+links + paths all resolved (checked programmatically); model ids / env names / status
+codes / scripts / thresholds cross-checked against the live code; no secrets in either doc.
+DEGRADED VALIDATION: the sandbox `/tmp` was ~98% full (≈261 MB free; leftover `nobody`-
+owned `node_modules` from prior sessions, undeletable), so `npm install` / `vitest` /
+`next build` could not run. Acceptable here because the slice changes no code — the
+auditor cross-checked every doc claim against the source instead.
+
+**Reviews:** code auditor — **no BLOCKER**; **1 MAJOR** (stale "226" test count in README
++ APPROACH) **FIXED in-run** (softened to "220+", since the suite couldn't be re-run);
+**1 MINOR** (optional `GEMINI_TIMEOUT_MS`/`GEMINI_THINKING_LEVEL` undocumented) **FIXED**
+(added to the env table + `.env.example`); **1 NIT** (`.env.example` lacked `GEMINI_MODEL`)
+**FIXED**. Also corrected the documented timeout default to the real 9000 ms (the code
+raised it from 4 s for image headroom). Compliance — **PASS on all 8 criteria** (firewall
++ local-OCR seam; stateless/no-PII; trade-offs/assumptions/out-of-scope; Match/Review/
+Mismatch human-in-the-loop; latency + bad-photo; runnable-from-README; bold/font honesty;
+conditional-ABV vs CONTEXT §5). Live deploy URL correctly DEFERRED to T5.3.
+
+**Next task:** the critical-path build work is now essentially complete (single-label core
++ docs done; T5.3 deploy is a human checkpoint). Strict-next builder slice is **M4 / T4.1**
+(batch input + processing) — the slip-rule cut line, now safely affordable given the
+schedule cushion; alternatively a T5.4 Priority-A release-blocker (A1 Next bump / A2
+missing-key friendly error) before deploy.
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-12 (evening run ~6 PM ET) — M3 / T3.4 Sample test labels
 
 **Slice built:** T3.4 — sample test labels. Strict-next TODO on freshly-cloned `main`

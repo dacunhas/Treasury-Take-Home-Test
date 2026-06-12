@@ -5,6 +5,40 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-12 — M5/T5.1 README + approach/assumptions doc
+
+**Verdict: no BLOCKER. 1 MAJOR + 1 MINOR + 1 NIT — all FIXED in-run. Docs-only slice.**
+
+Audited `README.md` + `docs/APPROACH.md` (+ the `.env.example` touch) against the live
+code. No secrets in either doc. Every factual claim cross-checked: env var names/defaults
+(`config.ts`, `.env.example`), model ids (`gemini-3.1-flash-lite`, `claude-3-5-sonnet-
+20241022`), route status codes (400/502/503/500/405), npm scripts, comparison-module list
++ thresholds (0.95/0.80, 1% net-contents tolerance, proof=2×ABV, beer 0.1% + "ABV"
+disallowed), the 10 MB cap, Node runtime, and all internal links/paths — all resolve.
+
+### MAJOR — FIXED in-run
+- README + APPROACH asserted "226 unit tests"; the static `src/**` test-case count is 234
+  and the last logged green on `main` is 226 (later cleanup PRs added tests without a new
+  PROGRESS top entry). The suite could not be re-run this session (disk-full sandbox), so
+  pinning an exact number would be a guess. **Fix:** softened both to "220+ tests" — true
+  under either count and not stale.
+
+### MINOR — FIXED in-run
+- The optional `GEMINI_TIMEOUT_MS` and `GEMINI_THINKING_LEVEL` env overrides (real, read by
+  `gemini.ts`) were undocumented. **Fix:** added both to the README env table and to
+  `.env.example` (commented). Also corrected the documented timeout default to the actual
+  **9000 ms** (the code raised it from 4 s for heavy-image headroom) — caught during the fix.
+
+### NIT — FIXED in-run
+- `.env.example` lacked a (commented) `GEMINI_MODEL` line despite the README documenting it
+  as the model-retirement override. **Fix:** added it alongside the two vars above.
+
+### Confirmed clean
+- No secrets/tokens/keys; honest about the bold/font OCR limitation and the `next@14.2.5`
+  advisory; required README elements all present (firewall/local-OCR seam, stateless/no-PII,
+  two-tier rationale, trade-offs/assumptions/out-of-scope); setup/run runnable from the
+  README alone (T5.1 acceptance). No contradictions with CONTEXT/PROJECT_PLAN.
+
 ## 2026-06-12 — M3/T3.4 sample test labels
 
 **Verdict: content sound; canonical warning byte-identical. 1 NIT fixed in-run.

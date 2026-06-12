@@ -251,11 +251,21 @@ Grouped by the PROJECT_PLAN §7 milestones.
 
 ## M5 — Polish, docs, deploy (Sun 6/14)
 
-### T5.1 — README + approach/assumptions doc  [TODO]
+### T5.1 — README + approach/assumptions doc  [DONE 2026-06-12]
 - Setup/run steps; architecture; **firewall constraint + swappable/local-OCR seam**;
   **stateless/no-PII** posture; two-tier inference rationale; trade-offs, limits,
   assumptions, out-of-scope.
 - **Accept:** a new reader can set up and run from the README alone.
+- Done: rewrote root `README.md` (was the M0 stub) into a full setup/run + architecture
+  + posture doc, and added `docs/APPROACH.md` (approach/tools/assumptions/trade-offs/
+  limits/out-of-scope). Covers the firewall + swappable/local-OCR seam, stateless/no-PII,
+  two-tier inference rationale, Match/Review/Mismatch human-in-the-loop framing, latency
+  + bad-photo handling, the bold/font OCR-limitation honesty note, and the conditional-
+  ABV-by-beverage-type rationale (CONTEXT §5) incl. the beer-ABV edge limitation (D4).
+  Env table + `.env.example` extended with the optional `GEMINI_MODEL`/`GEMINI_TIMEOUT_MS`/
+  `GEMINI_THINKING_LEVEL` overrides. Docs-only slice (no `src/` change). Auditor: no
+  BLOCKER; 1 MAJOR (stale 226 test count) + 1 MINOR + 1 NIT all fixed in-run. Compliance:
+  PASS on all 8 criteria. Folds D4 (and partially D1–D3) doc items into the README.
 
 ### T5.2 — Latency tuning  [DONE 2026-06-11]
 - Verify common-path single label < 5s on deploy; trim prompt/output if needed.

@@ -5,6 +5,34 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-12 — M5/T5.1 README + approach/assumptions doc
+
+**Overall: PASS** on all 8 in-scope criteria. Satisfies the PROJECT_PLAN §8 "Attention to
+requirements" + "Creative problem-solving" doc lines and the T5.1 acceptance ("a new reader
+can set up and run from the README alone").
+
+1. **Firewall constraint + swappable/local-OCR seam — PASS.** README Architecture + APPROACH
+   §3 name Marcus's blocked-ML constraint and the documented `LocalOcrExtractor` (Tesseract)
+   on-box fallback, correctly flagged "not fully implemented" for the prototype.
+2. **Stateless / no-PII posture — PASS.** README "Posture" + APPROACH §8/§9: in-memory only,
+   nothing persisted; no DB/accounts/auth.
+3. **Trade-offs / assumptions / out-of-scope — PASS.** APPROACH §8 (assumptions), §9 (out of
+   scope, matches PROJECT_PLAN §1), §10 (known limitations + trade-offs).
+4. **Match/Review/Mismatch human-in-the-loop — PASS.** README "What it does" with the
+   STONE'S THROW example + APPROACH §2/§4.
+5. **Latency surfaced + bad-photo handling — PASS.** "Verified in 1.4s" framing; angled/glare
+   sample + the vision-model + escalation note (APPROACH §5/§8).
+6. **Runnable from the README alone — PASS.** Node 18+, `npm install`, mocked tests need no
+   keys, `cp .env.example`, `npm run dev`; env table + scripts table + sample walkthrough.
+7. **Bold/font OCR honesty — PASS.** README Posture + APPROACH §8/§10 state caps+wording are
+   checked but true bold/font-size are not detectable from OCR (matches CONTEXT §5).
+8. **Conditional ABV by beverage type vs CONTEXT §5 — PASS.** APPROACH §4 matches the spec
+   (spirits required; wine Table/Light Wine substitute; beer optional + format flags;
+   proof=2×ABV) and §10 honestly documents the beer-ABV added-flavor/state-law edge.
+
+**DEFERRED (not FAIL):** the live deployed Vercel URL is asserted but not shown — belongs to
+T5.3 (human deploy checkpoint), not this slice.
+
 ## 2026-06-12 — M3/T3.4 sample test labels
 
 **Overall: PASS** on all 6 criteria. Satisfies PROJECT_PLAN §6 (sample labels incl. a
