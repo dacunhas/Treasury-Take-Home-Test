@@ -255,6 +255,18 @@ Grouped by the PROJECT_PLAN §7 milestones.
 ---
 
 ## Carry-over from review (from AUDIT.md / COMPLIANCE.md — address in owning milestone)
+- [M1 threshold tuning] flash-lite blurry-image probe (2026-06-11) escalated correctly
+  on blur+low-contrast, but a heavy-blur case returned `fail` WITHOUT escalating
+  (possible confidently-wrong). Consider raising `EXTRACTION_CONFIDENCE_THRESHOLD`
+  (env, default 0.7) so borderline-legible images escalate to Sonnet more eagerly.
+  Validate against real hard photos before changing — safe direction as-is.
+- [M3/T3.x UI input types — Steve request 2026-06-11] Constrain the form inputs:
+  Alcohol content + Net contents should accept NUMERIC entry, Brand/Class-type TEXT.
+  NOTE/DEPENDENCY: numeric-only ABV/net-contents means users submit bare numbers
+  (`13`, `750`), which the expected-side parsers currently treat as "no value"/"no
+  unit" → must ship WITH the expected-value parsing tolerance above (assume `%` for a
+  bare ABV; pair a bare net-contents number with a unit selector or default mL).
+  Implement the UI constraint and the parser tolerance together so they stay consistent.
 - [M2 engine-tuning / observed on a real Kendall-Jackson label 2026-06-11] The
   EXPECTED-side parsers are stricter than real agent input: a bare ABV like `13`
   is treated as "no expected value" (parser wants `13%`/`13% Alc./Vol.`), and a
