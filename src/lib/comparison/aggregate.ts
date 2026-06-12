@@ -122,7 +122,7 @@ export function compareLabel(
     compareBrand(expected.brand, extracted.brand),
     compareClassType(expected.classType, extracted.classType),
     compareAbv(expected.abv, combineAbv(extracted), expected.beverageType),
-    compareNetContents(expected.netContents, extracted.netContents),
+    compareNetContents(expected.netContents, extracted.netContents, expected.beverageType),
   ];
   const warning = checkGovernmentWarning(extracted.warningText);
   const overall = aggregateOverall(fields, warning);

@@ -118,3 +118,31 @@ describe('compareNetContents', () => {
     }
   });
 });
+
+describe('compareNetContents — conditional by beverage type (T2.5)', () => {
+  it('BEER: equal quantity in U.S. fl oz vs expected metric -> match', () => {
+    const r = compareNetContents('355 mL', '12 fl oz', 'beer');
+    expect(r.status).toBe('match');
+    expect(r.detail).toMatch(/malt beverage/i);
+  });
+  it('BEER: expected fl oz vs equal metric on label -> match', () => {
+    expect(compareNetContents('12 fl oz', '355 mL', 'beer').status).toBe('match');
+  });
+  it('SPIRITS: equal quantity in U.S. fl oz vs expected metric -> review (metric required)', () => {
+    const r = compareNetContents('750 mL', '25.4 fl oz', 'spirits');
+    expect(r.status).toBe('review');
+    expect(r.detail).toMatch(/metric/i);
+  });
+  it('WINE: cross-system equal quantity -> review', () => {
+    expect(compareNetContents('750 mL', '25.4 fl oz', 'wine').status).toBe('review');
+  });
+  it('beverageType omitted -> conservative review on cross-system (unchanged default)', () => {
+    expect(compareNetContents('750 mL', '25.4 fl oz').status).toBe('review');
+  });
+  it('BEER: a genuinely different fill is still a mismatch (allowance is system-only)', () => {
+    expect(compareNetContents('355 mL', '16 fl oz', 'beer').status).toBe('mismatch');
+  });
+  it('BEER: same-system equal quantity is unaffected -> match', () => {
+    expect(compareNetContents('355 mL', '355 mL', 'beer').status).toBe('match');
+  });
+});

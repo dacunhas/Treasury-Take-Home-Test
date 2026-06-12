@@ -532,3 +532,34 @@ gemini-3.1-flash-lite. No BLOCKER/MAJOR.**
   ExtractionError code + provider status) — valuable for prod debugging; no key leak.
 - **Note:** flash-lite is a lighter model; recommend a one-off blurry-image check that
   confidence falls below threshold so the Sonnet escalation fires (logged to BACKLOG).
+
+---
+
+## 2026-06-12 (evening) — M2/T2.5 net-contents beverage-type conditional
+
+**Verdict: APPROVE. No BLOCKER/MAJOR. 2 NIT (non-blocking, no action).**
+
+Audited the uncommitted slice (`netContents.ts`, `aggregate.ts`, `netContents.test.ts`)
+threading `beverageType` into the net-contents verdict. Engine remains pure/
+deterministic/I-O-free (no Date/random/globals, no input mutation). Gates green:
+`vitest src/lib/comparison/` + `tsc --noEmit` clean; full suite 233/233.
+
+Correctness verified: beer cross-system equal quantity -> `match` in BOTH directions
+(symmetric system-inequality check, not direction-coded); a genuinely different fill
+still `mismatch` (the beer allowance is reachable only AFTER the `diff > tolerance`
+check, so it is system-only, never magnitude); spirits/wine/undefined keep `review`;
+same-system paths untouched (new `if` nested inside the existing cross-system block).
+Backward-compat: new `beverageType?` is optional 3rd-positional before `options`; no
+in-tree 2-arg caller breaks; `aggregate.ts` now passes `expected.beverageType`
+(required field, always present). Mirrors the `abv.ts` conditional-by-type idiom.
+
+### NIT (no action)
+- `beverageType === 'beer'` single positive check has no exhaustiveness guard (unlike
+  `abv.ts` switch). Fine for a single branch; flag only if a 4th `BeverageType` with
+  its own net-contents rule is ever added.
+- `pe.value ?? 0` / `pf.value ?? 0` fallbacks are dead-defensive on this branch
+  (`.ml` non-null => `.value` non-null) — consistent with module style; leave.
+
+### Resolves
+**Closes the open T2.3 AUDIT MAJOR (M2)** — "net-contents not beverage-type-aware."
+Threaded end-to-end; test-covered; conservative default preserved. → Resolved.

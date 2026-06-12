@@ -822,3 +822,38 @@ PARTIAL to PASS.
   them.
 - The two large reference files (`Assignment.md`, the Gmail PDF) are intentionally
   left in place; decide whether to commit or `.gitignore` them.
+
+---
+
+## 2026-06-12 (evening run) — M2/T2.5 net-contents beverage-type conditional
+
+**Slice:** Resolved the open T2.3 AUDIT MAJOR (net-contents comparison not
+beverage-type-aware). Threaded `beverageType` end-to-end so the measurement-system
+rule is conditional per CONTEXT §5.
+
+**What changed:**
+- `src/lib/comparison/netContents.ts` — `compareNetContents` gains an optional
+  3rd-positional `beverageType?: BeverageType`. In the cross-system (metric vs U.S.)
+  equal-quantity branch: `beer` -> `match` ("U.S. fluid measure is acceptable for malt
+  beverages"); spirits/wine/undefined -> `review` with a sharpened detail naming the
+  metric requirement. Same-system and mismatch paths unchanged; the allowance is
+  reachable only after the numeric tolerance check, so it is system-only (a different
+  fill still `mismatch`). Module docstring updated.
+- `src/lib/comparison/aggregate.ts` — `compareLabel` now passes
+  `expected.beverageType` into `compareNetContents`.
+- `src/lib/comparison/netContents.test.ts` — +7 tests (beer both directions; beer
+  different-fill mismatch; beer same-system; spirits/wine review; omitted-type
+  conservative review).
+
+**Verify:** 233/233 tests green; `tsc --noEmit`, `next lint`, `next build` all clean.
+Extractor untouched (no live model calls). Pure deterministic engine change.
+
+**Reviews:** code auditor APPROVE (no BLOCKER/MAJOR; 2 NIT, no action); compliance
+PASS. Both confirm the T2.3 MAJOR is resolved. No fix-in-run required.
+
+**Status:** PR opened off `main` (branch `agent/m2-netcontents-beveragetype`).
+Critical path (M2/T1.3/M3/M5-latency) was already complete; this run cleared the last
+open MAJOR before touching batch (M4). Next strict-order TODO is M4/T4.1 (batch) — the
+slip-rule cut line — or M5/T5.1 (README/approach doc) on the critical path.
+
+**Blockers:** none.
