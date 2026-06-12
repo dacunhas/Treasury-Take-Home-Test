@@ -1344,3 +1344,12 @@ is a `match`, never "no recognizable unit").
 should read Match. This closes the open net-contents deploy anomaly from the prior entry.
 
 **Blockers:** none. PR off `main` (branch `agent/netcontents-prod-build-fix`).
+
+---
+
+## 2026-06-12 (audit run) — agent/audit-fix-gitignore-env
+
+Pre-submission §8 audit (cold session) on `main` @ 69c4c5a: gate green
+(tsc/lint/328-328 vitest/build), all §8 items PASS except one hard-FAIL —
+`.gitignore` missing `.env*` coverage. Steve approved "push the fix": this branch
+adds `.env*` + `!.env.example` and repairs a truncated comment line. No code change.

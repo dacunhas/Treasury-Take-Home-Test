@@ -823,3 +823,13 @@ Scope: pure `mapVerifyError` extracted from `route.ts` + tests. Mapped to PROJEC
 - **Acceptance: test added — PASS.** 11 tests incl. the missing-key 503.
 
 **Verdict: RELEASABLE.** Zero FAIL. Unblocks T5.3 (all Priority-A release-blockers now clear).
+
+---
+
+## 2026-06-12 (audit run) — §8 secrets/gitignore audit fix — PASS (after fix)
+
+"No secrets committed; API key via env var" — secret scan PASS on `main` (no token
+patterns, no tracked `.env*` besides the template), but the required `.gitignore`
+coverage of `.env*` was ABSENT → FAIL pre-fix. This branch adds `.env*` +
+`!.env.example`; with it, the §8 line is PASS. All other §8 items: see the audit
+run report (PASS or PENDING-human deploy/submit).
