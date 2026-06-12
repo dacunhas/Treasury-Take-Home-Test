@@ -157,9 +157,15 @@ deliberately.
 - **Latency depends on model availability.** A retired model id (Google shut down
   `gemini-2.0-flash` on 2026-06-01) shows up as a 404; `GEMINI_MODEL` lets an operator
   swap models without a code change.
-- **`next@14.2.5` carries a security advisory.** Bumping Next to the patched release is
-  a tracked release-blocker (BUILD_BACKLOG T5.4 / Priority A1) to be done before the
-  production deploy.
+- **Next.js dependency / security advisories.** Pinned to `next@14.2.35` (2026-06-12,
+  BUILD_BACKLOG T5.4 / Priority A1), which clears CVE-2025-29927 (the middleware
+  auth-bypass that drove the release-blocker; patched upstream in 14.2.25). `npm audit`
+  still lists a few residual `next` advisories (plus a transitive `postcss` one) whose
+  only fix is `next@16`, a breaking major. None applies to this app's surface — there is
+  no `middleware`, no `next/image`/Image Optimization API, no i18n config, and no
+  WebSocket upgrades; it is App Router with a single stateless `/api/verify` route. The
+  major upgrade to `next@16` is intentionally left as a separate, human-reviewed change
+  rather than folded into an unattended slice.
 - **Tolerant matching is tuned, not perfect.** The 0.80 / 0.95 similarity thresholds
   were chosen so a single-character typo on a typical brand lands in "Needs Review"
   rather than a false "Match" — erring toward a human glance over a silent pass.

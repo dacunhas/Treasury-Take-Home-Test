@@ -336,6 +336,15 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
 **Priority A — release-blockers (before T5.3 deploy):**
 - A1 — Bump `next` off `14.2.5` to the patched version (security advisory).
   *Accept:* the advisory clears; `tsc`/lint/`next build` + full suite green.
+  **DONE 2026-06-12 (evening).** Bumped `next` + `eslint-config-next` 14.2.5 -> **14.2.35**
+  (latest patch in the stable 14.2.x line; no source change). Clears CVE-2025-29927
+  (middleware auth-bypass; fixed upstream 14.2.25). Full gate green on 14.2.35: 273/273
+  vitest, `tsc --noEmit` clean, `next lint` 0 warnings, `next build` clean. Residual
+  `npm audit` advisories (4 next + 1 transitive postcss) only fix at `next@16` (breaking
+  major) and are non-applicable to this app's surface (no middleware / no next/image / no
+  i18n / no websockets; App Router + single `/api/verify` route) -> documented in
+  docs/APPROACH.md §10 and deferred to a human-reviewed next@16 upgrade (NOT an unattended
+  slice). Auditor APPROVE (no BLOCKER/MAJOR); compliance RELEASABLE (PASS, unblocks T5.3).
 - A2 — Map a lazily-resolved `MissingConfigError` (missing key) to a friendly
   `ExtractionError` at the `/api/verify` route boundary so the UI never sees a config
   stack trace. *Accept:* missing-key path returns the friendly 503 JSON; test added.
@@ -458,7 +467,9 @@ the source detail. Resolve via T5.4 sub-items (one per run).*
 - [M1/T1.3] Map a lazily-resolved `MissingConfigError` (missing key) to a friendly
   `ExtractionError` at the route boundary so the UI never sees a config stack trace.
   (Carried from the T1.1 run.)
-- [M5] `next@14.2.5` has a security advisory — bump before deploy. (Carried from T1.1.)
+- [M5] `next@14.2.5` security advisory — **RESOLVED 2026-06-12 (evening)** via T5.4/A1:
+  pinned `next@14.2.35` (clears CVE-2025-29927). Residual next@16-only advisories
+  documented as non-applicable known-limitation (docs/APPROACH.md §10).
 - [M2/T2.5] **RESOLVED 2026-06-12 (evening).** Threaded `beverageType` into the
   net-contents verdict: a BEER label stated in U.S. fl oz vs an expected metric value
   now resolves to `match` (either system acceptable for malt beverages); spirits/wine

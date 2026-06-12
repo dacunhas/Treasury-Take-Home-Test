@@ -1079,3 +1079,43 @@ build clean.
 compliance PASS. No non-compliant warning can reach `match`.
 
 **Blockers:** none. PR off `main` (branch `agent/m2-warning-body-casing-match`).
+
+---
+
+## 2026-06-12 (evening run, ~6 PM ET) — T5.4 / Priority A1: bump Next.js off 14.2.5
+
+**Slice:** A1 release-blocker (highest item in the P3 slice-order: Priority-A blockers
+jump the queue before the T5.3 deploy). No open BLOCKER/MAJOR audit or compliance FAIL
+to clear first (the T2.5 net-contents MAJOR was closed earlier 6/12).
+
+**Change:** `next` and `eslint-config-next` `14.2.5` -> **`14.2.35`** (latest patch in
+the stable 14.2.x line). package.json + regenerated package-lock.json ONLY — zero `src/`
+change.
+
+**Why 14.2.35 (not 15/16):** staying on the 14.2.x line clears the release-blocking
+advisory without major-version API churn (App Router semantics, React 19, etc.), which
+is the conservative correct call for an unattended slice. CVE-2025-29927 (middleware
+auth-bypass) was patched upstream at 14.2.25; 14.2.35 supersedes it and removes the
+deprecation flag on the package.
+
+**Validation (full gate, GREEN on 14.2.35):** 273/273 vitest (22 files); `tsc --noEmit`
+clean; `next lint` 0 warnings/errors; `next build` clean (/ static, /api/verify dynamic).
+`npm install` ran foreground (~16s); disk fine (/tmp ~65%).
+
+**Residual advisories (documented, deferred — NOT a blocker):** post-bump `npm audit`
+still lists 4 `next` advisories + 1 transitive `postcss`, whose only fix is `next@16`
+(breaking major). Verified non-applicable to this app's surface: no middleware, no
+next/image / Image Optimization API, no i18n config, no websocket upgrades — App Router
+with a single stateless `/api/verify` route. The next@16 upgrade is left as a separate
+human-reviewed change. Recorded in docs/APPROACH.md §10.
+
+**Reviews:** code auditor APPROVE (no BLOCKER/MAJOR; confirmed diff is exactly the bump,
+no secrets, residual-advisory non-applicability verified by grep; noted @next/swc-* native
+binaries pin to 14.2.33 per next@14.2.35's own manifest — expected upstream, not a defect).
+Compliance RELEASABLE / PASS (A1 acceptance met; no PROJECT_PLAN §8 regression; unblocks
+T5.3 deploy).
+
+**Status flips:** BUILD_BACKLOG T5.4/A1 -> DONE; M5 carry-over "next@14.2.5 advisory" ->
+RESOLVED. docs/APPROACH.md §10 limitation updated (14.2.35 + residual-advisory note).
+
+**Blockers:** none. PR off `main` (branch `agent/m5-next-security-bump`).

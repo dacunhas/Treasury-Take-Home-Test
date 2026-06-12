@@ -708,3 +708,22 @@ letter-casing differs.
 - Consistent with PROJECT_PLAN §8 / T2.4 ("correct text passes on text, note the
   formatting limit"). Residual bold-not-verifiable exposure is pre-existing and
   disclosed, not introduced here. **Overall: PASS.**
+
+---
+
+## 2026-06-12 (evening) — T5.4/A1: Next.js 14.2.5 -> 14.2.35 (security bump)
+
+- **A1 acceptance — PASS.** "advisory clears; tsc/lint/next build + full suite green."
+  CVE-2025-29927 cleared at 14.2.35; 273/273 vitest, tsc clean, lint 0, `next build`
+  clean — all re-verified firsthand.
+- **PROJECT_PLAN §8 posture — PASS (no regression).** Version bump, zero source change;
+  nothing in security / stateless-no-PII / <5s SLA / accessibility depends on the Next
+  patch level. a11y + contrast tests remain green. Bump strictly improves security posture.
+- **Residual next@16-only advisories — PASS (defensible known-limitation).** Each residual
+  advisory checked against the verified app surface (no middleware/next-image/i18n/
+  websockets; App Router + single stateless `/api/verify`) -> non-applicable. Pulling
+  next@16 is an out-of-scope breaking major that can't be validated in one unattended
+  slice. Documented in docs/APPROACH.md §10.
+
+**Verdict: RELEASABLE.** Does NOT block the T5.3 deploy — it unblocks it (closes the M5/A1
+release-blocker). Zero FAIL.
