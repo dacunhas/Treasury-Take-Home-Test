@@ -365,6 +365,12 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
   smart-suggest (overrideable, defaults mL when ambiguous — never auto-flip).
   *Accept:* bare `750` + selected unit compares cleanly; suggestion is overrideable;
   a11y preserved. Ship WITH B1 so UI + parser stay consistent.
+- B4 — Batch CSV **template download** button (Steve request 2026-06-12).
+  **DONE 2026-06-12 (interactive).** Pure `buildTemplateCsv()` (`src/lib/batch/template.ts`)
+  emits a correctly-shaped CSV (header + 2 valid example rows: a spirits row and a beer
+  row with blank ABV to show it's optional); the Batch tab gained a "Download CSV template"
+  button. Tests prove the template round-trips through `parseBatchCsv` with zero header/row
+  errors (so download->fill->upload can't fail on format). *Accept met.*
 - B3 — flash-lite confidence-threshold tuning: validate on real hard photos; consider
   raising `EXTRACTION_CONFIDENCE_THRESHOLD` (env, default 0.7) so heavy-blur escalates
   to Sonnet. *Accept:* a heavy-blur sample escalates (or a documented reason it doesn't).
@@ -386,6 +392,11 @@ has its own acceptance bar; mark sub-items DONE individually in PROGRESS.md.
 - D1 — Brand/class case-only difference (`kendall-jackson` vs `KENDALL-JACKSON`):
   stakeholder decision whether a pure case difference should be clean `match` instead
   of the current `review`. *Accept:* decision recorded + behavior matches it.
+  **DONE 2026-06-12 (interactive, Steve).** Decision: pure case / punctuation / possessive / accent /
+  whitespace-only differences are a clean `match` for Brand & Class/Type (not `review`).
+  `compareTextField` updated; detail reads "Matches (ignoring case, punctuation, and
+  accents)."; é folds to e. PROJECT_PLAN §3 updated; tests updated (textMatch +
+  aggregate integration). Shipped WITH the batch CSV-template button (Steve requests).
 - D2 — Add a clarifying comment on the ABV proof-only spirits path (proof≈2×ABV
   cross-check can't disagree with a self-derived value).
 - D3 — Confirm/surface intent of `finerThanTenthPrecision` (computed for all types,

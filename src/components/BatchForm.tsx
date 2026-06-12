@@ -42,6 +42,7 @@ import {
   summarizeOutcomes,
   toVerifyFields,
   outcomesToCsv,
+  buildTemplateCsv,
   sortOutcomes,
   type SortKey,
   type SortDirection,
@@ -316,6 +317,28 @@ export default function BatchForm() {
             contents, beverage type, and an image filename (ABV is optional). Each
             row is checked on its own — one unreadable label won&apos;t stop the rest.
           </p>
+
+          <div style={{ marginBottom: '1.1rem' }}>
+            <button
+              type="button"
+              onClick={() => downloadTextFile(buildTemplateCsv(), 'batch-template.csv')}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                color: COLORS.buttonBg,
+                background: 'transparent',
+                border: `1px solid ${COLORS.buttonBg}`,
+                borderRadius: 6,
+                cursor: 'pointer',
+              }}
+            >
+              Download CSV template
+            </button>
+            <p style={hintText}>
+              A ready-to-fill CSV with the correct columns and two example rows.
+            </p>
+          </div>
 
           <div style={{ marginBottom: '1.1rem' }}>
             <label htmlFor="batch-csv" style={label}>

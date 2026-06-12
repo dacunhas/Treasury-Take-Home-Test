@@ -1157,3 +1157,42 @@ note, no action); compliance RELEASABLE (all criteria PASS, zero FAIL).
 clear -> the only remaining critical-path item before submission is T5.3 (human deploy checkpoint).
 
 **Blockers:** none. PR off `main` (branch `agent/m5-a2-config-error-boundary`).
+
+---
+
+## 2026-06-12 (interactive, Steve) — D1 brand/class clean-match + batch CSV template button + deploy note
+
+Interactive session with Steve (post-T5.3 deploy verification).
+
+**D1 — formatting-only differences are a clean MATCH for Brand & Class/Type** (was `review`).
+Steve's decision: "STONE'S THROW"/"Stone's Throw", "Café"/"Cafe", case/punctuation/possessive/
+accent/whitespace-only differences are the same product -> clean `match` (detail: "Matches
+(ignoring case, punctuation, and accents)."). `compareTextField` (textMatch.ts) updated; é folds
+to e via existing diacritic-folding normalize. PROJECT_PLAN §3 updated to record the decision.
+Tests updated: textMatch.test.ts (formatting cases -> match; 0.80–0.95 still review; <0.80
+mismatch) + aggregate.test.ts integration (brand formatting -> match -> overall pass). Added
+compareClassType missing-test (closes a long-standing AUDIT NIT for parity).
+
+**Batch CSV template download** (Steve request). New pure `buildTemplateCsv()`
+(src/lib/batch/template.ts) + `TEMPLATE_CSV_HEADER`; "Download CSV template" button on the Batch
+tab. Header columns (image, brand, class/type, abv, net contents, beverage type) are parser-
+accepted aliases; two valid example rows (spirits + beer-with-blank-ABV). template.test.ts proves
+the template round-trips through `parseBatchCsv` with no header/row errors. Confirmed for Steve:
+batch already maps each row to an image by filename (the `image` column is required) — this was
+already built; the template just makes the format obvious.
+
+**Gate:** 293/293 vitest, `tsc --noEmit` clean, `next lint` 0 warnings, `next build` clean.
+
+**OPEN — deploy anomaly (net contents), needs Steve:** On the deployed `-jet` URL, a compliant
+`750 mL` net-contents (both on the generated sample and a real photo) is flagged "Needs review —
+no recognizable unit of measure." The Vercel overview shows the deployment is Production/Current
+built from `main @ eb792e9`; I fetched that exact commit and ran its `parseNetContents` /
+`compareNetContents("750 mL","750 mL","spirits")` -> clean **match**. The extracted value is plain
+ASCII "750 mL" (codepoints checked). So the running bundle's behavior contradicts its own source —
+not a stale commit, most likely a **stale build cache**. RECOMMEND: redeploy with "Use existing
+Build Cache" UNCHECKED (or push an empty commit) for a clean rebuild, then re-test; if it persists
+after a clean rebuild it's a genuine engine bug and we reproduce it with the exact server input.
+Also: the canonical `treasury-take-home-test.vercel.app` serves a DIFFERENT/older app — confirm the
+URL submitted to Treasury is the current `-jet` one (domain hygiene).
+
+**Blockers:** none for this slice. PR off `main` (branch `agent/ux-textmatch-clean-match-and-csv-template`).
