@@ -100,7 +100,7 @@ function extracted(over: Partial<ExtractedLabel> = {}): ExtractedLabel {
 }
 
 describe('compareLabel — full label integration', () => {
-  it('clean spirits label: 4 field results + warning, brand formatting -> review overall', () => {
+  it('clean spirits label: 4 field results + warning, brand formatting -> match overall (D1)', () => {
     const r = compareLabel(SPIRITS, extracted());
     expect(r.fields.map((f) => f.field)).toEqual([
       'Brand',
@@ -109,9 +109,10 @@ describe('compareLabel — full label integration', () => {
       'Net Contents',
     ]);
     expect(r.warning.status).toBe('match');
-    // brand differs only by case -> review (never a silent pass) -> overall review
-    expect(r.fields[0]!.status).toBe('review');
-    expect(r.overall).toBe('review');
+    // brand differs only by case -> clean match (D1 decision 2026-06-12) -> overall pass
+    expect(r.fields[0]!.status).toBe('match');
+    expect(r.fields[0]!.detail).toMatch(/ignoring case/i);
+    expect(r.overall).toBe('pass');
   });
 
   it('exact brand + everything matches -> overall pass', () => {

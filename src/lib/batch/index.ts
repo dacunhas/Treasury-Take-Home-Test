@@ -14,6 +14,7 @@ export {
 } from './process';
 export { toVerifyFields } from './fields';
 export { outcomesToCsv, RESULTS_CSV_HEADER } from './export';
+export { buildTemplateCsv, TEMPLATE_CSV_HEADER } from './template';
 export {
   sortOutcomes,
   type SortKey,

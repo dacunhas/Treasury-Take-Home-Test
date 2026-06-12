@@ -86,8 +86,11 @@ and a human-readable `detail`. `review` = "looks right but a human should glance
     (`'s`/`'s`), collapse whitespace.
   - Score similarity (Levenshtein-ratio / Dice). Thresholds (tune with fixtures):
     `>= 0.95` → match; `0.80–0.95` → review; `< 0.80` → mismatch.
-  - Exact-after-normalization differences (case/punctuation only) → **review**
-    with note "matches except formatting," never silent pass.
+  - Exact-after-normalization differences (case / punctuation / possessive /
+    accent / whitespace only) → **match** (Steve decision 2026-06-12, BACKLOG D1):
+    "STONE'S THROW" vs "Stone's Throw" and "Café" vs "Cafe" are the same product, so
+    they resolve to a clean match (with a note on what was ignored). Genuinely
+    uncertain cases (similarity 0.80–0.95) still go to **review**.
 - **ABV (conditional on beverage type — see CONTEXT §5):**
   - Form carries a beverage-type selector: Spirits / Wine / Beer.
   - Extract numeric % from both sides (regex for `NN(.N)% Alc./Vol.`).
