@@ -75,15 +75,22 @@ export interface ParsedNetContents {
   ml: number | null;
 }
 
-// Unit alternation (longest/multi-word first so e.g. "fl oz" wins over "l").
-const UNIT_GROUP =
-  'fl\\.?\\s*oz\\.?|fluid\\s+ounces?|milliliters?|millilitres?|centiliters?|centilitres?|liters?|litres?|gallons?|quarts?|pints?|ml|cl|gal|qt|pt|l|oz';
-
 // A number (optional decimal, "." or "," separator) IMMEDIATELY followed by a unit.
 // Anchoring the number to a unit means surrounding text or a lot code that happens
 // to contain digits ("Lot 12345 / 750 mL") does not steal the parse from the real
-// net-contents token.
-const NET_WITH_UNIT_RE = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_GROUP})\\b`, 'i');
+// net-contents token. Unit alternation is longest/multi-word first so "fl oz" wins
+// over "l".
+//
+// Written as a LITERAL regex on purpose. It used to be built with
+// `new RegExp(`...${UNIT_GROUP}...`)`, interpolating a separate module-scope string.
+// In the Vercel PRODUCTION bundle that interpolation came through empty, so the unit
+// alternation was lost and a valid "750 mL" fell through to the bare-number branch and
+// was wrongly reported as "no recognizable unit of measure" (the prototype's net-contents
+// regression). Unit tests passed because the dev/test transform built the RegExp correctly;
+// only the production build miscompiled it. A regex literal is parsed at build time and
+// cannot break that way.
+const NET_WITH_UNIT_RE =
+  /(\d+(?:[.,]\d+)?)\s*(fl\.?\s*oz\.?|fluid\s+ounces?|milliliters?|millilitres?|centiliters?|centilitres?|liters?|litres?|gallons?|quarts?|pints?|ml|cl|gal|qt|pt|l|oz)\b/i;
 // Fallback: any bare number, used only when no number-with-unit exists in the string.
 const BARE_NUMBER_RE = /(\d+(?:[.,]\d+)?)/;
 

@@ -146,3 +146,28 @@ describe('compareNetContents — conditional by beverage type (T2.5)', () => {
     expect(compareNetContents('355 mL', '355 mL', 'beer').status).toBe('match');
   });
 });
+
+describe('parseNetContents — unit recognition regression (prod-build literal regex)', () => {
+  // Locks the fix for the deployed "750 mL -> no recognizable unit" bug: the
+  // number-with-unit regex must recognize a unit for these common net-contents
+  // strings (it broke only in the production bundle when the regex was built by
+  // interpolation; a literal regex prevents recurrence).
+  it.each([
+    ['750 mL', 'mL', 750],
+    ['750 ml', 'mL', 750],
+    ['750mL', 'mL', 750],
+    ['1 L', 'L', 1000],
+    ['12 fl oz', 'fl oz', 354.882],
+    ['0,75 L', 'L', 750],
+  ])('parses %s -> unit recognized', (input, unit, ml) => {
+    const p = parseNetContents(input);
+    expect(p.unit).toBe(unit);
+    expect(p.ml).toBeCloseTo(ml, 2);
+  });
+
+  it('a clean "750 mL" vs "750 mL" is a match, never "no recognizable unit"', () => {
+    const r = compareNetContents('750 mL', '750 mL', 'spirits');
+    expect(r.status).toBe('match');
+    expect(r.detail).not.toMatch(/no recognizable unit/i);
+  });
+});

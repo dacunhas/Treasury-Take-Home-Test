@@ -1196,3 +1196,34 @@ Also: the canonical `treasury-take-home-test.vercel.app` serves a DIFFERENT/olde
 URL submitted to Treasury is the current `-jet` one (domain hygiene).
 
 **Blockers:** none for this slice. PR off `main` (branch `agent/ux-textmatch-clean-match-and-csv-template`).
+
+---
+
+## 2026-06-12 (interactive, Steve) — FIX: net-contents "no recognizable unit" was a PRODUCTION-BUILD regex bug
+
+**Root cause (found via raw deployed-API capture).** On the deployed app, a clean
+`750 mL` net-contents (expected AND found both literally "750 mL", plain ASCII —
+verified by intercepting the `/api/verify` JSON and dumping codepoints) was reported
+`review` "a number with no recognizable unit of measure". The deployment was confirmed
+Production/Current from the latest `main` (so NOT a stale commit, and NOT the never-built
+unit-dropdown idea, and NOT the form input). The committed `parseNetContents` parses
+"750 mL" correctly under vitest — so source and the running bundle DISAGREED.
+
+`NET_WITH_UNIT_RE` was built as `new RegExp(`(\d+...)\s*(${UNIT_GROUP})\b`, 'i')`,
+interpolating a separate module-scope `UNIT_GROUP` string. In the Vercel production
+bundle that interpolation came through empty, so the unit alternation was lost and every
+valid "NNN mL" fell through to the bare-number branch -> "no recognizable unit". The dev/
+test transform built the RegExp correctly, which is why 31 net-contents unit tests were
+green while production was broken.
+
+**Fix.** Rewrote `NET_WITH_UNIT_RE` as a single LITERAL regex (no interpolation, no
+module-scope string dependency) — parsed at build time, cannot miscompile that way.
+Removed the now-unused `UNIT_GROUP`. Added a regression block (`750 mL`, `750 ml`,
+`750mL`, `1 L`, `12 fl oz`, `0,75 L` all recognize a unit; a clean "750 mL" vs "750 mL"
+is a `match`, never "no recognizable unit").
+
+**Gate:** 300/300 vitest, `tsc --noEmit` clean, `next lint` 0 warnings, `next build` clean.
+**Verify after merge+deploy:** re-run a 750 mL label on the deployed URL -> Net Contents
+should read Match. This closes the open net-contents deploy anomaly from the prior entry.
+
+**Blockers:** none. PR off `main` (branch `agent/netcontents-prod-build-fix`).
