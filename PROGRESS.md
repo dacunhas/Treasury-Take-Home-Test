@@ -4,6 +4,87 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-12 (evening run ~6 PM ET) — M4 / T4.1 Batch input + processing
+
+**Slice built:** T4.1 — batch-mode input + processing (the slip-rule cut line). On
+freshly-cloned `main` (HEAD PR #24) the single-label critical path was complete
+(M0-M3, T1.3, T2.x, T5.1 README, T5.2 latency all DONE), with no open BLOCKER/MAJOR/
+FAIL. Remaining TODOs: T4.1/T4.2 (batch), T5.3 (deploy = human checkpoint, not a
+builder slice), and the T5.4 cleanup epic. The strict-next TODO in backlog file order
+is **T4.1**, and with the critical path done and a schedule cushion to Mon 6/15, batch
+is now safely affordable. The connected-folder `planning/*` copies lagged badly (they
+showed M3 as TODO and AGENTS.md was truncated mid-§7) — built off `main` per §0.
+
+**What was built**
+- Pure, DOM-free, model-free batch core in `src/lib/batch/` (the correctness core,
+  heavily unit-tested — mirroring the comparison-engine philosophy):
+  - `csv.ts` — `parseBatchCsv`: an RFC-4180-style tokenizer (quoted fields, embedded
+    commas, escaped `""`, CRLF/LF, blank-line skip) + per-row, NON-FATAL validation.
+    Any-order, case-insensitive alias headers (brand / class/type / abv / net contents
+    / beverage type / image). Required: brand, class/type, net contents, beverage type,
+    image; **ABV intentionally optional** (conditional by beverage type, CONTEXT §5).
+    Only whole-file problems (empty / no header / missing columns / no data rows) are
+    fatal; a malformed row carries its own `errors` and is still returned.
+  - `match.ts` — `matchRowsToFiles`: pair each row's image cell to an uploaded filename
+    (case-insensitive basename, ext-less stem fallback, dir-prefix strip on both sides);
+    two rows may share one image (files not consumed); reports `unusedFiles`; an
+    unmatched row gets a friendly per-row error, never a throw.
+  - `process.ts` — `runBatch`: PER-ROW try/catch isolation (a rejecting verifier becomes
+    an `error` outcome and the batch continues — the T4.1 acceptance), invalid/unmatched
+    rows short-circuit to `error` with NO wasted model call, a bounded concurrency pool
+    (default 3) that returns outcomes in original row order, and `onProgress`. Generic
+    over the image payload `F` so it never imports the extractor / fetch / DOM.
+    `summarizeOutcomes` tallies pass/review/fail/error.
+  - `fields.ts` — `toVerifyFields`: row -> the flat `/api/verify` fields, passing ABV
+    (incl. '') verbatim so the server + engine own the §5 conditional rules.
+- UI glue (thin): `BatchForm.tsx` — CSV + multi-image inputs, live row-count preview,
+  a labelled `<progress>` + aria-live status, and a results `<table>` (Row / Brand /
+  Image / Result / Detail) with a summary tally + unused-files notice. Its verifier
+  POSTs each row to the EXISTING, already-tested stateless `/api/verify` route (server
+  stays the extraction boundary; single-label correctness core reused unchanged), with
+  the same pre-upload downscale as the single path. `AppTabs.tsx` — an accessible
+  WAI-ARIA Single/Batch tab switch (roving tabindex, Arrow/Home/End); `page.tsx` now
+  renders `AppTabs`. Sortable columns, row->detail, and CSV export are T4.2.
+
+**Verification (sandbox /tmp clone):** `vitest run` **260/260 passing** (26 new batch
+tests — extractor never involved; the verifier is injected and MOCKED in process tests,
+no live model/network). Scoped `tsc --noEmit` (strict + `noUncheckedIndexedAccess`,
+`jsx:react-jsx`) **clean** over the whole slice.
+DEGRADED VALIDATION: the sandbox `/tmp` was ~99% full (~170 MB free; ~3.9 GB of leftover
+`nobody`-owned `node_modules` from prior sessions, undeletable), so a full `npm install`
+would not fit. Per AGENTS.md §7's disk note, validated with a minimal scratch toolchain
+(vitest + typescript + react/types + jsdom + axe-core, ~73 MB) symlinked into the clone —
+this runs the FULL existing suite (incl. the jsdom a11y test) plus the new tests. The two
+files that import `next` (`api/verify/route.ts`, `app/layout.tsx`) were excluded from the
+scoped typecheck since `next` could not be installed; neither was changed this slice, and
+both are green on `main`. `next lint` / `next build` not re-run (no Next runtime types in
+the scratch env) — noted for the next clean-sandbox run; the batch core has no Next deps.
+
+**Reviews (subagents, this run):**
+- Code auditor — **SHIP-READY; no BLOCKER/MAJOR.** Verified per-row isolation, order-stable
+  concurrency, the CSV tokenizer, image matching, the server boundary, no secrets/PII, and
+  the §5 ABV passthrough. MINOR/NIT: shared color-token-by-reference, dead `sawAnyChar`
+  branch (both FIXED in-run); duplicate-filename / duplicate-header / fixed-concurrency
+  (logged to BACKLOG under T4.2 — not gold-plated).
+- Compliance — **PASS on all 8 in-scope criteria** (batch CSV+image input; match by
+  filename/column; progress + per-row isolation; results table; §5 conditional-ABV
+  preserved; accessibility incl. WAI-ARIA tabs + word+glyph status; stateless/no-PII;
+  human-in-the-loop). T4.2 (sort/detail/export) correctly DEFERRED, not FAIL.
+
+**Self-triage:** the two safely-fixable nits (bind `BatchForm` status colours to the
+contrast-test-guarded `format.ts` tokens instead of copied hex; drop the dead CSV branch)
+were FIXED + re-tested in-run (260/260 still green, tsc clean). The three MINORs needing a
+UX decision were logged to BACKLOG (T4.2), not guessed.
+
+**Next task:** **M4 / T4.2** — batch results table + export (sortable columns, row->detail,
+CSV export), folding in the three T4.1 review carry-overs. After that the build is
+feature-complete pending T5.3 (human deploy checkpoint) and any T5.4 Priority-A
+release-blockers (A1 Next bump, A2 missing-key friendly error) before deploy.
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-12 (evening run ~6 PM ET) — M5 / T5.1 README + approach/assumptions doc
 
 **Slice built:** T5.1 — the README + approach/assumptions doc. On freshly-cloned `main`
