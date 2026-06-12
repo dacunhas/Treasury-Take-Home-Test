@@ -24,11 +24,14 @@ export const SUPPORTED_MIME_TYPES = [
 
 /**
  * Flash model id. `gemini-2.0-flash` was SHUT DOWN by Google on 2026-06-01 and
- * now returns HTTP 404 ("model not found"), so the default is a current GA
- * vision model. Overridable via the `GEMINI_MODEL` env var so a future model
- * sunset can be handled by a config change + redeploy — no code change needed.
+ * now returns HTTP 404 ("model not found"). The default is
+ * `gemini-3.1-flash-lite`: benchmarked at ~1.4s vs ~2.9s for gemini-3.5-flash on
+ * the live URL, with identical field + Government-Warning accuracy on a clear
+ * label — chosen to hold the 5s SLA with margin (low-confidence/blurry images
+ * escalate to the Sonnet deep tier). Overridable via `GEMINI_MODEL` so a model
+ * swap/sunset is a config change + redeploy, no code change.
  */
-const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-3.1-flash-lite';
 /**
  * Upper bound on the Flash call so a hung connection cannot block indefinitely.
  * A 4s cap was too tight for real full-resolution label photos (lots of fine
@@ -185,7 +188,7 @@ export function parseExtractedLabel(text: string): ExtractedLabel {
 export interface GeminiExtractorOptions {
   /** Defaults to getGeminiApiKey() — resolved lazily on first extract(). */
   apiKey?: string;
-  /** Defaults to `GEMINI_MODEL` env or "gemini-3.5-flash". */
+  /** Defaults to `GEMINI_MODEL` env or "gemini-3.1-flash-lite". */
   model?: string;
   /** Injectable transport for testing. Defaults to global fetch. */
   fetchImpl?: typeof fetch;

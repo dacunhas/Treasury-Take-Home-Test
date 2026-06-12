@@ -447,3 +447,23 @@ Jenny's "request a better image"); unknown→500. Matches PROJECT_PLAN §5.
 
 **Correctly deferred (not failures):** T3.3 full a11y sweep, T3.4 sample-label browser E2E.
 **Strengths:** single source of truth for size + MIME across client/server with a drift-guard test; preflight wording mirrors the server; defense-in-depth (server re-validates).
+
+
+---
+
+## 2026-06-11 (interactive) — M5 / T5.2 5s SLA
+
+**Verdict: 5s SLA — PASS (measured on the deployed URL).**
+
+- **~5s response ceiling (Sarah's hard requirement):** common-path server `latencyMs`
+  now ~1.4s with `gemini-3.1-flash-lite` (benchmarked 3 runs on the live URL), vs ~2.9s
+  for gemini-3.5-flash — both well under 5s. Two-tier design preserved: low-confidence/
+  blurry → Sonnet deep tier (spec tolerates 5–7s on that escalated path). Earlier the
+  path was failing outright (retired model 404, then >5s before tuning); now PASS.
+- **Government Warning exact-match:** verified present + correct in the benchmark runs
+  (status=match) on a clear label — the highest-value check survives the faster model.
+- **Accessibility/"73-year-old":** observed that strict expected-value parsing (bare
+  `13`, `750`) confuses real input → flagged for an engine-tuning slice (BACKLOG); this
+  is a USABILITY gap, not a latency/SLA failure.
+- **Open before submission:** blurry-image escalation validation; deploy smoke-test
+  (T5.3); README/approach doc (T5.1).

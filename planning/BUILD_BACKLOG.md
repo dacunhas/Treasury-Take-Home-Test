@@ -227,9 +227,26 @@ Grouped by the PROJECT_PLAN §7 milestones.
   assumptions, out-of-scope.
 - **Accept:** a new reader can set up and run from the README alone.
 
-### T5.2 — Latency tuning  [TODO]
+### T5.2 — Latency tuning  [DONE 2026-06-11]
 - Verify common-path single label < 5s on deploy; trim prompt/output if needed.
 - **Accept:** measured < 5s common path on the deployed URL; documented.
+- Done: root-caused the live latency on the deployed URL and fixed it in layers,
+  all measured on the production URL with a downscaled 1568px label:
+  (1) `gemini-2.0-flash` was retired 2026-06-01 → 404; moved to a current model.
+  (2) Disabled Gemini 3.x "thinking" (`thinkingLevel='low'`) — default "medium"
+      reasoning was the dominant cost (~7.6s → 6.6s).
+  (3) Dropped the unused `rawText` full-transcription from the model output (fewer
+      output tokens) (6.6s → ~4.5s real photo).
+  (4) Benchmarked `gemini-3.5-flash` (~2.9s avg) vs `gemini-3.1-flash-lite` (~1.4s
+      avg) over 3 runs each on the live URL — identical field + Government-Warning
+      accuracy on a clear label. **Locked `gemini-3.1-flash-lite`** as the primary
+      fast tier (env-overridable via `GEMINI_MODEL`); Sonnet remains the
+      confidence-triggered deep tier for blurry/low-confidence images (spec allows
+      the escalated path 5–7s). Common-path server latency now ~1.4s, well under
+      the 5s SLA with headroom for cold starts. Diagnostic per-request model
+      benchmark hook removed before locking. Remaining latency TODO: confirm
+      flash-lite reports honest low confidence on a genuinely blurry image so
+      escalation fires (follow-up validation).
 
 ### T5.3 — Deploy to Vercel  [TODO]  *(human checkpoint)*
 - Configure env vars in Vercel; deploy; smoke test from a clean browser.
@@ -238,6 +255,22 @@ Grouped by the PROJECT_PLAN §7 milestones.
 ---
 
 ## Carry-over from review (from AUDIT.md / COMPLIANCE.md — address in owning milestone)
+- [M2 engine-tuning / observed on a real Kendall-Jackson label 2026-06-11] The
+  EXPECTED-side parsers are stricter than real agent input: a bare ABV like `13`
+  is treated as "no expected value" (parser wants `13%`/`13% Alc./Vol.`), and a
+  bare net contents like `750` (no unit) can't compare to `750ML` → Needs review.
+  The 73-year-old-benchmark user will type `13` and `750`. Make expected-value
+  parsing tolerant of bare numbers (assume `%` for ABV; for net contents either
+  infer no-unit==found-unit or prompt for a unit). Extraction itself is correct.
+- [M2 engine-tuning] Net-contents parse of a unit-glued, upper-cased value
+  (`750ML`, no space) should resolve cleanly to mL; confirm `parseNetContents`
+  handles `750ML` (the message implied "no recognizable unit"). Add a regression.
+- [M2/UX decision] Brand/class case-only differences (`kendall-jackson` vs
+  `KENDALL-JACKSON`) currently resolve to **review** ("matches except formatting")
+  by the T2.1 design decision. Confirm with stakeholder whether a pure case
+  difference should instead be a clean **match** (the STONE'S THROW rule was about
+  punctuation/possessives + judgment; case-only may warrant match). Currently
+  conservative-by-design, not a bug.
 - [M2/T2.x or M5 docs] Auditor MINOR: ABV proof-only spirits path skips the explicit
   proof≈2×ABV cross-check (derivation can't disagree with itself) — add a clarifying
   comment / decide if expected-side proof should be cross-checked.
