@@ -5,6 +5,48 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-12 — M4/T4.2 Batch results table + export
+
+**Overall: PASS.** Every T4.2 acceptance + PROJECT_PLAN §8 batch criterion is met with
+clean tsc/lint/build and 273/273 tests (13 new). One PARTIAL documentation sub-point;
+no FAIL.
+
+1. **Sortable results table — PASS.** Pure stable `sortOutcomes`; headers are real
+   `<button>`s in `<th scope=col>` with `aria-sort` + glyph + direction-stating
+   `aria-label`; severity rank pass<review<fail<error for the verdict column.
+2. **Row → detail matches single-label output — PASS.** The expander renders the SAME
+   exported `ResultCard` the single-label screen uses (overall banner + per-field
+   expected/found rows + Government Warning word-level diff) — structural equality, not
+   a re-implementation, so it cannot drift.
+3. **CSV export downloads — PASS.** "Download results (CSV)" serializes the current
+   sorted order via pure `outcomesToCsv` (RFC-4180, CRLF, header always emitted),
+   client-side Blob with the object URL revoked after click.
+4. **§8 batch line — PASS.** Multi-row CSV + images in → results table + CSV export out;
+   per-row error isolation preserved (error rows ride alongside good rows; reason in the
+   Detail column + the CSV Note column).
+5. **Accessibility ("73-year-old") — PASS (one PARTIAL sub-point).** Semantic table,
+   word+glyph status (never colour alone), plain-language verdicts, AA tokens
+   (contrast.test). PARTIAL: WCAG 2.5.5/2.5.8 large-target sizing for the new sort +
+   show/hide buttons not explicitly measured this slice (likely inherited) → README/M5.
+6. **Human-in-the-loop — PASS.** Output is flags (pass/review/fail/error) in plain
+   language; sorting orders, never adjudicates.
+7. **Stateless / no-PII — PASS.** Export is fully client-side (Blob + revoked object URL);
+   nothing persisted/logged server-side; images in memory for the request only.
+8. **Carry-over (duplicate basenames) — PASS.** Gentle `role="status"` rename notice.
+
+### README / limitations to capture (M5)
+- Verify or note large-target sizing for the new buttons.
+- Note the results CSV is generated/downloaded entirely client-side, never persisted/logged.
+- Note one-row-expands-at-a-time and the pass<review<fail<error sort order are intentional.
+- (From audit) optional CSV formula-injection guard if the export is ever shared.
+
+### Correctly DEFERRED (not FAIL)
+- Live deployed-URL batch smoke test (T5.3, human checkpoint). Large-file pagination /
+  perf limits (out of T4.2 scope).
+
+---
+
+
 ## 2026-06-12 — M4/T4.1 Batch input + processing
 
 **Overall: PASS on all 8 in-scope criteria.** T4.2 concerns (sort, row-detail, export)

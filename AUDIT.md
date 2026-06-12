@@ -5,6 +5,49 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-12 — M4/T4.2 Batch results table + export
+
+**Verdict: SHIP-READY. No BLOCKER/MAJOR. 3 MINOR (1 fixed in-run, 2 logged) + NITs.**
+
+Audited the T4.2 diff: `src/lib/batch/export.ts`, `src/lib/batch/sort.ts`,
+`src/lib/batch/index.ts`, and the `BatchForm.tsx` changes. Export+sort are
+pure/deterministic/I-O-free (no Date/random/global state, no input mutation — sort
+decorates a fresh `.map`). RFC-4180 escaping correct (quotes on `" , \r \n`, doubles
+embedded quotes, CRLF terminator). No secrets. `colSpan={6}` matches the 6 body columns.
+One row expands at a time, so the reused `ResultCard`'s `id="result-heading"` cannot
+collide. a11y patterns correct: `aria-sort` on `<th scope=col>`, descriptive sort-button
+`aria-label`, glyphs `aria-hidden`, `aria-expanded`/`aria-controls` paired with the
+detail `id`, `role="status"` dupe-name notice. `useMemo([outcomes, sort])` deps complete;
+`expandedRow` reset on new pick/preview/run avoids a stale index.
+
+### MINOR — FIXED in-run
+- **`export.ts` `csvCell`** — assumed a string and called `.replace` directly; a future
+  non-string caller would throw and blow up `outcomesToCsv` with no friendly path.
+  **Fix applied:** coerce `String(value ?? '')` at the boundary. Re-tested green.
+
+### MINOR — logged to BACKLOG (not fixed in-run; not a correctness bug)
+- **`export.ts` CSV formula injection** — a model-extracted cell starting `=`/`+`/`-`/`@`
+  could execute on open in Excel/Sheets. Acceptable under the self-to-self threat model
+  (the same agent runs and opens the export; no third-party recipient), so shipped as-is
+  with a backlog item to add a leading-character guard (prefix `'`) or document the limit
+  before the CSV is ever shared/auto-consumed.
+- **`sort.ts` `compareValues`** — infers numeric-vs-string from runtime `typeof`. Correct
+  for every current `SortKey`; key the strategy explicitly if a future key returns a mixed
+  type. → BACKLOG.
+
+### NIT (no action)
+- `sortOutcomes` allocates two intermediate arrays (decorate/sort/undecorate) — the right
+  call for stability; trivial at realistic batch sizes (no 5s-budget concern).
+- `statusWord` default returns the raw token, but `FieldStatus` is a closed union so the
+  fallthrough is unreachable.
+
+### Resolution status
+csvCell coercion fixed + re-tested (273/273). Formula-injection guard + compare-strategy
+keying carried to BUILD_BACKLOG. No BLOCKER/MAJOR.
+
+---
+
+
 ## 2026-06-12 — M4/T4.1 Batch input + processing
 
 **Verdict: SHIP-READY. No BLOCKER/MAJOR.** Pure core (csv/match/process/fields)

@@ -256,7 +256,7 @@ Grouped by the PROJECT_PLAN §7 milestones.
   BLOCKER/MAJOR (shared color-token + dead-branch nits fixed in-run). Compliance: PASS
   on all 8 in-scope criteria; T4.2 (sort/detail/export) correctly DEFERRED.
 
-### T4.2 — Batch results table + export  [TODO]
+### T4.2 — Batch results table + export  [DONE 2026-06-12]
 - Sortable results table; row → detail; CSV export of results.
 - **Accept:** export downloads; row detail matches single-label output.
 - Carry-overs from the T4.1 review (address here): (a) MINOR — `BatchForm` keys the
@@ -265,6 +265,18 @@ Grouped by the PROJECT_PLAN §7 milestones.
   duplicate header columns are first-wins silently; warn or document. (c) MINOR —
   batch concurrency is a fixed 3 with no cancel; consider a Cancel control / tunable
   pool for 200-300-row imports. None is a correctness bug (per-row core is sound).
+- Done 2026-06-12 (evening): `src/lib/batch/export.ts` (`outcomesToCsv` +
+  `RESULTS_CSV_HEADER`) and `src/lib/batch/sort.ts` (`sortOutcomes`, stable +
+  non-mutating) — both pure/unit-tested (13 new tests). `BatchForm` gained
+  sortable column headers (real `<button>`s in `<th>` with `aria-sort` + a
+  visible ▲/▼), a per-row "Show details" expander that renders the SAME exported
+  `ResultCard` as the single-label screen (so the detail matches single-label
+  output exactly, no duplicated logic), and a "Download results (CSV)" button
+  (client-side Blob, object URL revoked — nothing persisted). RFC-4180 escaping,
+  CRLF, header always emitted. Carry-over (a) addressed: duplicate uploaded-image
+  basenames now raise a gentle `role="status"` notice. tsc/lint/`next build`
+  clean; 273/273 tests. Auditor: no BLOCKER/MAJOR (3 MINOR + NITs — one fixed
+  in-run, rest below). Compliance: PASS (one PARTIAL doc sub-point).
 
 ---
 
@@ -462,5 +474,18 @@ the source detail. Resolve via T5.4 sub-items (one per run).*
 - [M3/T3.2 NIT] An image with an empty `type` (browser couldn't infer a MIME) falls
   into the "type not supported" preflight branch rather than a presence message;
   acceptable UX, flagged for completeness. (T3.2 AUDIT NIT.)
+- [M4/T4.2 or M5 docs] Auditor MINOR (T4.2): the results-CSV export does not guard
+  against spreadsheet formula injection (a model-extracted cell beginning `=`/`+`/`-`/`@`
+  could execute on open in Excel/Sheets). Acceptable under the self-to-self threat model
+  (the agent opens their own results), but add a leading-character guard in `csvCell`
+  (prefix with `'`) or document the limitation if the CSV is ever shared/auto-consumed.
+- [M4/T4.2 NIT] Auditor MINOR (T4.2): `sort.ts` `compareValues` infers numeric-vs-string
+  from runtime `typeof`; correct for today's keys but key the compare strategy explicitly
+  if a future `SortKey` returns a mixed type.
+- [M3/M5 docs] Compliance PARTIAL (T4.2): WCAG 2.5.5/2.5.8 large-target sizing for the new
+  sort + show/hide buttons not explicitly measured this slice (likely inherited). Verify or
+  note in README limitations. Also: document that the results CSV is generated/downloaded
+  entirely client-side (never persisted/logged) and that one-row-expands-at-a-time +
+  pass<review<fail<error sort severity are intentional product decisions.
 - [M2 NIT] Net-contents `gal` factor is 3785.41 vs 3785.411784 (~5e-7 relative,
   harmless under the 1% tolerance); tighten only if tolerance is ever reduced.

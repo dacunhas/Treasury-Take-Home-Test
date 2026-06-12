@@ -4,6 +4,69 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-12 (evening run) — M4 / T4.2 Batch results table + export
+
+**Slice built:** T4.2 — sortable batch results table, row→detail, CSV export. The
+strict-next TODO on freshly-cloned `main` (M0–M3 done; M4/T4.1 done; M5 README +
+latency done; T5.3 deploy is a human checkpoint; T5.4 is a one-item-per-run epic).
+No open BLOCKER/MAJOR/FAIL on entry. The single-label critical path is complete, so
+finishing M4 batch (the slip-rule cut line) is the right in-scope slice — we are on
+track with runs to spare before the Mon 6/15 gate.
+
+**What was built**
+- `src/lib/batch/export.ts` — pure `outcomesToCsv(outcomes)` + `RESULTS_CSV_HEADER`.
+  Serializes the batch to a results CSV (Row, Brand, Class/Type, ABV, Net Contents,
+  Beverage Type, Image, Result [plain language], Verified in (s), Closer check,
+  per-field breakdown incl. Government Warning, Note for error rows). RFC-4180
+  escaping, CRLF, header always emitted (even an empty batch). I/O-free → unit-tested
+  under the `node` env.
+- `src/lib/batch/sort.ts` — pure `sortOutcomes(outcomes, key, dir)` (key =
+  row|brand|image|status). Non-mutating, STABLE (original-index tie-break), severity
+  rank pass<review<fail<error for the verdict column.
+- `src/components/BatchForm.tsx` — sortable column headers (real `<button>`s inside
+  `<th scope="col">` with `aria-sort` on the active column + a visible aria-hidden
+  ▲/▼ and a direction-stating `aria-label`); a per-row "Show details" toggle
+  (`aria-expanded`/`aria-controls`) that renders the SAME exported `ResultCard` the
+  single-label screen uses (so the row detail matches single-label output exactly —
+  no duplicated rendering); a "Download results (CSV)" button (client-side Blob +
+  object URL revoked after click — nothing persisted). T4.1 carry-over (a) addressed:
+  duplicate uploaded-image basenames now raise a gentle `role="status"` rename notice.
+- `src/lib/batch/index.ts` — exports the two new pure helpers + their types.
+- Tests: `export.test.ts` (7) + `sort.test.ts` (6) — header-only empty batch, per-row
+  serialization, field breakdown incl. warning, escalation column, error-row Note,
+  RFC-4180 escaping, determinism; sort non-mutation, asc/desc per key, case-insensitive
+  brand/image, severity order, stability under both directions.
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `next lint` clean;
+`next build` succeeds; `vitest run` **273/273 passing** (13 new). Extractor not
+involved (export+sort are pure; the component reuses the already-tested `/api/verify`
+path and `ResultCard`). No live API calls.
+
+**Reviews:** code auditor = **no BLOCKER/MAJOR**; 3 MINOR (defensive `csvCell` string
+coercion — FIXED in-run; CSV formula-injection guard — acceptable under the self-to-self
+threat model, logged to BACKLOG; `compareValues` runtime type-keying — correct today,
+logged). Compliance = **PASS** on every T4.2 + §8 batch criterion (sortable table,
+row-detail-matches-single-label via reused `ResultCard`, CSV export downloads,
+per-row isolation, stateless/no-PII, human-in-the-loop, word+glyph status); one PARTIAL
+doc sub-point (WCAG large-target sizing not explicitly measured) logged to BACKLOG/M5.
+
+**Self-triage:** applied the safe `csvCell` coercion + re-tested; the formula-injection
+guard, the sort compare-strategy keying, and the target-size doc note are MINOR/PARTIAL →
+logged to BUILD_BACKLOG (not gold-plated). M4 batch mode (T4.1 + T4.2) is now complete.
+
+**Open finding for Steve (pre-existing, repo-wide — NOT this slice):** `next@14.2.5`
+security advisory still open (install deprecation warning + the 2025-12-11 Next security
+update). It is **Priority A1** in the T5.4 epic — a release-blocker to land before the
+T5.3 deploy. Recommend taking it as the next builder slice (or a quick manual PR).
+
+**Next task:** T5.4 epic, Priority A1 — bump `next` off `14.2.5` to the patched version
+(security advisory), then A2 (map `MissingConfigError`→friendly `ExtractionError` at the
+route boundary). Both are release-blockers before the T5.3 human deploy.
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE PR.**
+
+---
+
 ## 2026-06-12 (evening run ~6 PM ET) — M4 / T4.1 Batch input + processing
 
 **Slice built:** T4.1 — batch-mode input + processing (the slip-rule cut line). On
