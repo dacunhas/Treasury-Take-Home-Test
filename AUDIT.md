@@ -702,3 +702,28 @@ text can reach it. `textMatch:false` retained on the relaxed pass; only consumer
 (234/234 total); tsc/lint/build clean. NIT (header "byte-for-byte" wording) fixed
 in-run. NIT (`warningSeverity` 'review' arm now unreachable via warnings) left for
 switch exhaustiveness. → Resolves the "warning always shows Needs review" report.
+
+---
+
+## 2026-06-12 (evening) — T5.4/A1: Next.js 14.2.5 -> 14.2.35 (security bump)
+
+**Scope:** dependency version bump only — package.json (`next`, `eslint-config-next` ->
+14.2.35) + regenerated package-lock.json. No `src/` change.
+
+- **Diff scope — clean.** Exactly two files changed; no untracked/added files; package.json
+  delta is precisely the four version lines; lockfile shrank (dedup) — no suspicious adds.
+- **Secrets — none.** Diff grep for key/token/secret/PRIVATE KEY/provider key prefixes ->
+  zero; only registry URLs + integrity hashes added.
+- **Target sanity — APPROVE.** 14.2.35 is the de-deprecated patched build in the 14.2.x
+  line; staying on 14.2.x (vs 15/16) avoids major API churn for an unattended slice.
+  Original A1 driver CVE-2025-29927 (patched 14.2.25) comfortably superseded.
+- **Residual-advisory applicability — confirmed by grep:** no middleware, no `next/image`,
+  no i18n in next.config, no websockets; App Router + single `/api/verify`. Residual
+  next@16-only advisories genuinely non-applicable; deferring the breaking major is sound.
+- **MINOR (informational, no action):** `@next/swc-*` native optional deps resolve to
+  14.2.33, not 14.2.35 — this matches next@14.2.35's own published manifest (SWC binaries
+  not re-cut for the .35 patch). `next build` loads the platform binary fine. Not tampering.
+- **NIT:** exact pins on next/eslint-config-next are consistent with the file convention
+  and desirable for reproducibility.
+
+**No BLOCKER, no MAJOR. Verdict: APPROVE.**
