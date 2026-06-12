@@ -35,12 +35,18 @@ import {
   ACCEPTED_TYPES_LABEL,
   MAX_IMAGE_LABEL,
 } from '@/lib/ui/imageConstraints';
+import {
+  NET_CONTENTS_UNITS,
+  DEFAULT_NET_CONTENTS_UNIT,
+  composeNetContents,
+  suggestNetContentsUnit,
+} from '@/lib/ui/netContentsInput';
 
 const SAMPLE = {
   brand: 'OLD TOM DISTILLERY',
   classType: 'Kentucky Straight Bourbon Whiskey',
   abv: '45% Alc./Vol. (90 Proof)',
-  netContents: '750 mL',
+  netContentsValue: '750',
 };
 
 const BEVERAGE_OPTIONS: { value: BeverageType; label: string }[] = [
@@ -83,6 +89,10 @@ export default function VerifyForm() {
   const [errorOrigin, setErrorOrigin] = useState<ErrorOrigin | null>(null);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
+  const [netContentsValue, setNetContentsValue] = useState('');
+  const [netContentsUnit, setNetContentsUnit] = useState<string>(
+    DEFAULT_NET_CONTENTS_UNIT,
+  );
   const brandRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -109,6 +119,16 @@ export default function VerifyForm() {
     // round-trip so the agent gets an instant, friendly message (T3.2). The API
     // re-validates independently; this is a UX fast-path, not the boundary.
     const formData = new FormData(e.currentTarget);
+    // B2: net contents is entered as a number + a unit dropdown so the unit is
+    // always explicit. Compose them into the canonical "<value> <unit>" string
+    // the engine parses, then drop the raw parts so the API sees only `netContents`.
+    const composedNet = composeNetContents(
+      String(formData.get('netContentsValue') ?? ''),
+      String(formData.get('netContentsUnit') ?? ''),
+    );
+    formData.set('netContents', composedNet);
+    formData.delete('netContentsValue');
+    formData.delete('netContentsUnit');
     const file = formData.get('image');
     const image =
       file instanceof File ? { type: file.type, size: file.size } : null;
@@ -176,6 +196,13 @@ export default function VerifyForm() {
       setSubmitState('idle');
     }
   }
+
+  // B2 OPTIONAL smart-suggest: a non-silent, overrideable unit hint. It never
+  // changes the dropdown on its own — the user clicks "Use L" to apply it.
+  const netContentsSuggestion = suggestNetContentsUnit(
+    netContentsValue,
+    netContentsUnit,
+  );
 
   const verifying = submitState === 'verifying';
 
@@ -277,17 +304,65 @@ export default function VerifyForm() {
           </div>
 
           <div style={fieldWrap}>
-            <label htmlFor="netContents" style={label}>
+            <label htmlFor="netContentsValue" style={label}>
               Net contents
             </label>
-            <input
-              id="netContents"
-              name="netContents"
-              type="text"
-              style={input}
-              placeholder={SAMPLE.netContents}
-              autoComplete="off"
-            />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                id="netContentsValue"
+                name="netContentsValue"
+                type="text"
+                inputMode="decimal"
+                value={netContentsValue}
+                onChange={(e) => setNetContentsValue(e.target.value)}
+                style={{ ...input, flex: '1 1 auto' }}
+                placeholder={SAMPLE.netContentsValue}
+                autoComplete="off"
+                aria-describedby="netContents-help"
+              />
+              <label htmlFor="netContentsUnit" className="sr-only">
+                Net contents unit
+              </label>
+              <select
+                id="netContentsUnit"
+                name="netContentsUnit"
+                value={netContentsUnit}
+                onChange={(e) => setNetContentsUnit(e.target.value)}
+                style={{ ...input, flex: '0 0 13rem', width: 'auto' }}
+                aria-describedby="netContents-help"
+              >
+                {NET_CONTENTS_UNITS.map((u) => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p id="netContents-help" style={hintText}>
+              Enter the number and choose its unit (defaults to mL). Leave blank if
+              you are not checking net contents.
+            </p>
+            {netContentsSuggestion && (
+              <p role="status" style={{ ...hintText, color: COLORS.buttonBg }}>
+                {netContentsSuggestion.reason}{' '}
+                <button
+                  type="button"
+                  onClick={() => setNetContentsUnit(netContentsSuggestion.unit)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    color: COLORS.buttonBg,
+                    font: 'inherit',
+                    fontWeight: 700,
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Use {netContentsSuggestion.unit}
+                </button>
+              </p>
+            )}
           </div>
 
           <div style={fieldWrap}>

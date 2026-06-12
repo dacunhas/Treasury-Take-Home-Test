@@ -4,6 +4,60 @@ Newest entries on top. Builder appends; never rewrites history.
 
 ---
 
+## 2026-06-12 (evening run) — T5.4 / B2 net-contents NUMBER + UNIT input
+
+**Slice built:** T5.4 epic, sub-item **B2** — net-contents NUMBER field + UNIT dropdown.
+The strict-next TODO: B1 shipped last run and the backlog flagged B2 STRICT-NEXT; the
+critical path, M4, T5.1 docs, and Priority-A blockers (A1/A2) are all merged on `main`;
+T5.3 deploy is a human-only checkpoint. No open BLOCKER/MAJOR audit finding or compliance
+FAIL was outstanding on entry, so B2 was the correct single slice.
+
+**What was built**
+- `src/lib/ui/netContentsInput.ts` (new, pure/DOM-free): `NET_CONTENTS_UNITS` (default
+  **mL**; mL/cL/L/fl oz, then optional pt/qt/gal — every value a symbol the engine's
+  `parseNetContents` canonicalizes), `composeNetContents(value, unit)` (builds the
+  canonical "<value> <unit>" string; blank value -> '' so the field stays optional;
+  a present value ALWAYS gets a unit), `suggestNetContentsUnit(value, unit)` (OPTIONAL
+  non-silent hint: fires only when the mL default is implausible — e.g. "0.75" -> litres
+  — and never when the user picked a non-default unit; returns a hint or null, mutates
+  nothing), `isNetContentsUnit`.
+- `src/components/VerifyForm.tsx`: net contents split into a number `<input>`
+  (`inputMode="decimal"`) + a unit `<select>` (default mL). On submit the form composes
+  `netContents` from the two parts and `delete`s the raw fields, so `/api/verify` sees
+  only the canonical `netContents` string — the engine never has to guess a bare number's
+  unit. The suggestion renders as a `role="status"` line with a "Use <unit>" button; the
+  dropdown is only changed by that click (never auto-flipped). a11y preserved: number
+  input label tied by `htmlFor`, an `sr-only` label for the select, shared
+  `aria-describedby` help text.
+- `src/lib/ui/netContentsInput.test.ts` (new): 16 tests — unit list/order/default,
+  `isNetContentsUnit`, compose (pairing, trim, comma-decimal, blank->'', unit fallback,
+  ALWAYS-attaches-a-unit, round-trip through the real `parseNetContents`), suggest
+  (positive, normal-fill negatives, respects explicit unit, junk/zero/blank, reason text).
+
+**Why no engine change:** `src/lib/comparison/netContents.ts` is UNCHANGED. The unit is
+now supplied by the form, but the engine's unit-less->`review` and cross-system->`review`
+safety nets stay in force (defense in depth) and remain covered by the existing
+`netContents.test.ts`. The new compose tests prove the form can't feed a bare number in.
+
+**Verification (sandbox /tmp clone):** `tsc --noEmit` clean; `next lint` 0 warnings;
+`vitest run` **328/328 passing** (16 new); `next build` clean; axe a11y still 0 violations.
+No live API calls (no extractor touched).
+
+**Reviews:** code auditor = **APPROVE**, no BLOCKER/MAJOR (1 MINOR: dead `SAMPLE.netContents`
+field; 1 comment/constant NIT). Compliance = **RELEASABLE**, all 5 criteria PASS (1 optional
+contrast-test coverage NIT).
+
+**Self-triage:** fixed both auditor items in-run — removed the dead `SAMPLE.netContents`
+key and aligned the suggest-threshold comment to the `< 5` constant; re-ran the gate green.
+Optional contrast-test NIT logged to BACKLOG (don't gold-plate).
+
+**Next task:** T5.4 Priority-C robustness items (C1 symmetric abort deadline, C2 boundary
+regression tests, C3/C4/C5 test hardening) — pick one per run; then T5.3 deploy (human).
+
+**Blockers:** none. **Status: READY FOR STEVE TO REVIEW + MERGE (PR opened against main).**
+
+---
+
 ## 2026-06-12 (evening run) — T5.4 / B1 bare-number ABV tolerance
 
 **Slice built:** T5.4 epic, sub-item **B1** — numeric ABV input + bare-number

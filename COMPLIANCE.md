@@ -5,6 +5,37 @@ belong to a later milestone are DEFERRED (not FAIL). Read-only output.
 
 ---
 
+## 2026-06-12 (evening run) — T5.4 / B2 net-contents NUMBER + UNIT
+
+**Overall: RELEASABLE (PASS on all 5 criteria). Zero FAIL.** B2 is the input affordance;
+the comparison engine (`netContents.ts`) is UNCHANGED, and its CONTEXT §5 guards
+(spirits/wine metric required; cross-system -> `review`; unit-less -> `review`) stay in
+force and independently tested.
+
+1. **Number + unit dropdown, required units, default mL — PASS.** `NET_CONTENTS_UNITS` =
+   mL/cL/L/fl oz (required) + pt/qt/gal (optional); default mL (first option); every value
+   engine-parseable (test-verified).
+2. **Engine never gets a unit-less number from the form; unit-less still -> `review` — PASS.**
+   `composeNetContents` always attaches a unit to a present value (blank stays optional);
+   form `delete`s raw parts before POST. The engine's unit-less->`review` and
+   cross-system->`review` safety nets remain (existing `netContents.test.ts`), so no silent
+   wrong-pass path exists. Regression-guarded by the new compose tests (the §5 commitment
+   the B1 run made for the B2 slice is met).
+3. **Smart-suggest non-silent / overrideable / never auto-flips — PASS.** Pure hint, applied
+   only via a "Use <unit>" button; respects an explicit non-default unit; default mL when
+   ambiguous.
+4. **Accessibility preserved — PASS.** Labels tied to both controls (`sr-only` label for the
+   select), `aria-describedby` help, keyboard-reachable native controls, status not
+   color-only (`role="status"` text); axe a11y test still 0 violations ("73-year-old bar").
+5. **Stateless / no-PII — PASS.** Confined to client React state + a pure helper; no new
+   persistence or I/O; raw parts stripped before submit.
+
+- **NIT (optional, not a FAIL):** the suggestion text color (`buttonBg` on white, ~7.8:1,
+  AA-passing) isn't enumerated as a foreground-on-white pair in `contrast.test.ts`. Coverage
+  gap only; message isn't color-dependent. Logged to BACKLOG.
+
+---
+
 ## 2026-06-12 (evening run) — T5.4 / B1 bare-number ABV tolerance
 
 **Overall: RELEASABLE (PASS).** B1 meets its acceptance bar, preserves the

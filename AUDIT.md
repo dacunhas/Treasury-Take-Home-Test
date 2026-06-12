@@ -5,6 +5,32 @@ the builder may mark a finding `Resolved` with a back-reference.
 
 ---
 
+## 2026-06-12 (evening run) — T5.4 / B2 net-contents NUMBER + UNIT
+
+**Verdict: APPROVE. No open BLOCKER/MAJOR.**
+
+Audited the slice diff: `src/lib/ui/netContentsInput.ts` (new pure helper),
+`src/lib/ui/netContentsInput.test.ts` (new), `src/components/VerifyForm.tsx` (form split
+into number + unit). Pure/deterministic/I-O-free helper; no secrets; clean module boundary
+(composes for the engine, does not duplicate it). Core B2 guarantees all hold:
+`composeNetContents` never emits a unit-less number for a present value (blank -> '';
+else "<value> <unit>" with an mL fallback); the form `delete`s the raw parts so the API
+sees only `netContents`; the engine's unit-less->`review` net remains as defense in depth.
+Smart-suggest mutates nothing and only applies via a user click (never auto-flips), and
+early-returns when the user already chose a non-default unit. a11y strong: `htmlFor` tie
+on the number input, `sr-only` label on the select, `aria-describedby` help, a real
+`<button type="button">` for the suggestion. 16 tests, all green.
+
+- **MINOR** `VerifyForm.tsx` `SAMPLE.netContents` — dead after the split (placeholder now
+  uses `SAMPLE.netContentsValue`). Fix: remove the key. **Resolved in-run** (key deleted).
+- **NIT** `netContentsInput.ts` — comment said ">= ~10 mL" while the cutoff is `n < 5`.
+  **Resolved in-run** (comment aligned to `< 5`).
+- **NIT** `netContentsInput.ts` `composeNetContents` does no numeric validation (junk like
+  "abc" composes to "abc mL"). By design — the engine is the validation boundary and routes
+  junk to `missing`/`review`. No action.
+
+---
+
 ## 2026-06-12 (evening run) — T5.4 / B1 bare-number ABV tolerance
 
 **Verdict: CHANGES-REQUESTED on first pass; all actioned items fixed in-run. Final: clean.**
