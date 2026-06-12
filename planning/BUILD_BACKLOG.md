@@ -255,6 +255,19 @@ Grouped by the PROJECT_PLAN §7 milestones.
 ---
 
 ## Carry-over from review (from AUDIT.md / COMPLIANCE.md — address in owning milestone)
+- [M3/T3.x Net-contents unit dropdown — Steve request 2026-06-11] Replace the free-text
+  net-contents entry with a NUMBER field + a UNIT dropdown of common alcohol container
+  units (default **mL**; offer mL, cL, L, fl oz; optionally pt/qt/gal). The chosen unit
+  is sent explicitly so the engine never has to guess a bare number's unit (closes the
+  `750`→"no recognizable unit" gap). Pairs with the numeric-input item above.
+  - OPTIONAL smart-suggest (advisable scheme): pre-select the dropdown from the typed
+    magnitude, but as a NON-silent suggestion the user can override (assist-not-adjudicate
+    + the 73-yo accessibility bar — never silently change their input). Suggested heuristic
+    keyed to real container sizes: decimal value <~5 → **L** (e.g. 1.5 → 1.5 L magnum,
+    1.75 → handle); whole values ~12/16/22/24/40 → **fl oz** (40 → 40 oz, 12 → 12 oz beer);
+    ~50–1500 → **mL** (750 → 750 mL). Show the guess + a one-line "we assumed L — change?"
+    affordance; default to mL when ambiguous. Keep it a suggestion, not an auto-flip, so a
+    mistyped magnitude can't silently mislabel a fill size on a compliance tool.
 - [M1 threshold tuning] flash-lite blurry-image probe (2026-06-11) escalated correctly
   on blur+low-contrast, but a heavy-blur case returned `fail` WITHOUT escalating
   (possible confidently-wrong). Consider raising `EXTRACTION_CONFIDENCE_THRESHOLD`
