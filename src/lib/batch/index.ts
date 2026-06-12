@@ -13,6 +13,12 @@ export {
   type RunBatchOptions,
 } from './process';
 export { toVerifyFields } from './fields';
+export { outcomesToCsv, RESULTS_CSV_HEADER } from './export';
+export {
+  sortOutcomes,
+  type SortKey,
+  type SortDirection,
+} from './sort';
 export type {
   BatchExpectedInput,
   BatchRow,
